@@ -29,9 +29,9 @@
             <li class="profile-nav onhover-dropdown pe-0 py-0">
             <div class="d-flex align-items-center profile-media">
                 <div class="b-r-25 bg-primary text-white d-flex align-items-center justify-content-center" style="width:40px;height:40px;font-size:1.5rem;">
-                    {{ request.user.username|default:''|slice:":1"|upper }}
+                    {{ request.user.get_full_name|default:''|slice:":1"|upper }}
                 </div>
-                <div class="flex-grow-1 user"><span>{{ request.user.username }}</span>
+                <div class="flex-grow-1 user"><span>{{ request.user.get_full_name|default:request.user.username  }}</span>
                 <p class="mb-0 font-nunito">Profile 
                     <svg>
                     <use href="{% static 'assets/svg/icon-sprite.svg' %}#header-arrow-down"></use>

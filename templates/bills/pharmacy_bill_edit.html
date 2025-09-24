@@ -515,10 +515,10 @@ document.addEventListener('DOMContentLoaded', function(){
       if (payFull.checked){
         if (!payDirty) payAmount.value = grand.toFixed(2);
         payAmount.readOnly = true;
-        payAmount.classList.add('bg-light');
+       
       } else {
         payAmount.readOnly = false;
-        payAmount.classList.remove('bg-light');
+      
       }
     }
   }

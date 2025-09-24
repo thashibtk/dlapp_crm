@@ -1,5 +1,6 @@
 {% extends 'base.html' %}
 {% block content %}
+{% load roles %}
 
 <div class="container-fluid default-dashboard">
   <div class="row">
@@ -22,7 +23,7 @@
             </ul>
           </div>
           <div class="col-md-6 p-0 d-flex justify-content-end align-items-center gap-2">
-            <a class="btn btn-outline-secondary" href="{% url 'appointment_list' %}">
+            <a class="btn btn-outline-secondary" href="{% if request.user|in_group:'ConsultingDoctor' or request.user|in_group:'Doctor' %}{% url 'my_appointment_list' %}{% else %}{% url 'appointment_list' %}{% endif %}">
               <i class="fa fa-arrow-left me-2"></i>Back to Appointments
             </a>
             <a class="btn btn-outline-primary" href="{% url 'appointment_reschedule' pk=a.pk %}">

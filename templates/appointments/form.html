@@ -1,5 +1,6 @@
 {% extends 'base.html' %}
 {% block content %}
+{% load roles %}
 
 <div class="container-fluid default-dashboard">
   <div class="row">
@@ -20,12 +21,8 @@
                             </a>
                         </li>
                     </ul>
-                </div>
-                <div class="col-6 p-0 d-flex justify-content-end align-items-center">
-                    <a class="btn btn-outline-secondary" href="{% url 'appointment_list' %}">
-                        <i class="fa fa-arrow-left me-2"></i>Back to Appointments
-                    </a>
-                </div>
+                </div> 
+
             </div>
         </div>
     </div>
@@ -136,7 +133,7 @@
         </div>
 
         <div class="card-footer d-flex justify-content-end gap-2">
-          <a class="btn btn-light" href="{% url 'appointment_list' %}">
+          <a class="btn btn-light" href="{{ request.META.HTTP_REFERER|default_if_none:''|default:'' }}{% if not request.META.HTTP_REFERER %}{% if request.user|in_group:'ConsultingDoctor' %}{% url 'my_appointment_list' %}{% else %}{% url 'appointment_list' %}{% endif %}{% endif %}">
             <i class="fa fa-times me-2"></i>Cancel
           </a>
           <button class="btn btn-primary">

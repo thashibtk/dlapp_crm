@@ -94,6 +94,7 @@ urlpatterns = [
 
     # expenses
     path('expenses/', v.expense_list, name='expense_list'),
+    path("expenses/mine/", v.my_expense_list, name="my_expense_list"),
     path('expenses/new/', v.expense_create, name='expense_create'),
     path('expenses/<uuid:pk>/approve/', v.expense_approve, name='expense_approve'),
     path('expenses/<uuid:pk>/reject/', v.expense_reject, name='expense_reject'),

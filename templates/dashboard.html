@@ -139,6 +139,21 @@
     <div class="col-12">
       <div class="row row-cols-1 row-cols-md-2 row-cols-xl-4 g-3">
 
+
+        {% if request.user|in_group:"Doctor" or request.user|in_group:"ConsultingDoctor" %}
+          <div class="col">
+            <a href="{% url 'my_appointment_list' %}" class="text-decoration-none text-reset">
+              <div class="kpi-card h-100">
+                <div class="icon-wrap"><i class="fa fa-stethoscope"></i></div>
+                <div>
+                  <div class="label">My {{ kpi_day_label }} Appointments</div>
+                  <div class="value mono">{{ summary.my_appts_count|default:0 }}</div>
+                </div>
+              </div>
+            </a>
+          </div>
+        {% endif %}
+
         {% if request.user|in_group:"Doctor" or request.user|in_group:"OperationsManager" %}
           <div class="col"><div class="kpi-card h-100">
             <div class="icon-wrap"><i class="fa fa-clock-o"></i></div>
@@ -175,6 +190,8 @@
             <div><div class="label">Open Leads</div><div class="value mono">{{ summary.open_leads_count|default:0 }}</div></div>
           </div></div>
         {% endif %}
+
+      
 
         {% if request.user|in_group:"PharmacyManager" and not request.user|in_group:"OperationsManager" and not request.user|in_group:"Doctor" %}
           <div class="col"><div class="kpi-card h-100">

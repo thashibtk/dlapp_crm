@@ -23,11 +23,9 @@
       </a>
     </div>
 
-
     <nav class="sidebar-main">
       <div class="left-arrow" id="left-arrow"><i data-feather="arrow-left"></i></div>
       <div id="sidebar-menu">
-        <!-- Fixed sidebar template with proper active states and organization -->
         <ul class="sidebar-links" id="simple-bar">
           <li class="back-btn">
             <a href="{% url 'dashboard' %}">
@@ -39,11 +37,11 @@
           <li class="pin-title sidebar-main-title"><div><h6>Pinned</h6></div></li>
           <li class="sidebar-main-title"><div><h6 class="lan-1">General</h6></div></li>
 
-          <!-- Dashboard - Fixed active condition -->
+          <!-- Dashboard -->
           <li class="sidebar-list {% if request.resolver_match.url_name == 'dashboard' or request.resolver_match.url_name == 'home' %}active{% endif %}">
             <i class="fa fa-thumb-tack"></i>
             <a class="sidebar-link sidebar-title link-nav {% if request.resolver_match.url_name == 'dashboard' or request.resolver_match.url_name == 'home' %}active{% endif %}"
-              href="{% url 'dashboard' %}">
+               href="{% url 'dashboard' %}">
               <svg class="stroke-icon"><use href="{% static 'assets/svg/icon-sprite.svg' %}#stroke-home"></use></svg>
               <svg class="fill-icon"><use href="{% static 'assets/svg/icon-sprite.svg' %}#fill-home"></use></svg>
               <span class="lan-3">Dashboard</span>
@@ -52,133 +50,26 @@
 
           {% with urlname=request.resolver_match.url_name %}
 
-          {% if request.user|in_group:"Receptionist" or request.user|in_group:"OperationsManager" or request.user|in_group:"Doctor" %}
-
-            <!-- Patients - Added create pages -->
-            <li class="sidebar-list {% if urlname in 'patient_list,patient_create,patient_update,patient_detail' %}active{% endif %}">
+           <li class="sidebar-list {% if urlname in 'expense_list,my_expense_list,expense_create,expense_detail,expense_update' %}active{% endif %}">
               <i class="fa fa-thumb-tack"></i>
-              <a class="sidebar-link sidebar-title {% if urlname in 'patient_list,patient_create,patient_update,patient_detail' %}active{% endif %}"
-                href="#">
-                <svg class="stroke-icon"><use href="{% static 'assets/svg/icon-sprite.svg' %}#stroke-staffs"></use></svg>
-                <svg class="fill-icon"><use href="{% static 'assets/svg/icon-sprite.svg' %}#fill-staffs"></use></svg>
-                <span>Patients</span>
-              </a>
-              <ul class="sidebar-submenu">
-                <li><a class="{% if urlname == 'patient_list' %}active{% endif %}" href="{% url 'patient_list' %}">All Patients</a></li>
-                <li><a class="{% if urlname == 'patient_create' %}active{% endif %}" href="{% url 'patient_create' %}">Add New Patient</a></li>
-              </ul>
-            </li>
-
-            <!-- Appointments - Added create pages -->
-            <li class="sidebar-list {% if urlname in 'appointment_list,my_appointment_list,appointment_create,appointment_detail,appointment_edit' %}active{% endif %}">
-              <i class="fa fa-thumb-tack"></i>
-              <a class="sidebar-link sidebar-title {% if urlname in 'appointment_list,my_appointment_list,appointment_create,appointment_detail,appointment_edit' %}active{% endif %}"
-                href="#">
-                <svg class="stroke-icon"><use href="{% static 'assets/svg/icon-sprite.svg' %}#stroke-calendar"></use></svg>
-                <svg class="fill-icon"><use href="{% static 'assets/svg/icon-sprite.svg' %}#fill-calender"></use></svg>
-                <span>Appointments</span>
-              </a>
-              <ul class="sidebar-submenu">
-                {% if request.user|in_group:"Doctor" or request.user|in_group:"ConsultingDoctor" %}
-                <li><a class="{% if urlname == 'my_appointment_list' %}active{% endif %}" href="{% url 'my_appointment_list' %}">My Appointment</a></li> 
-                {% endif %}
-                <li><a class="{% if urlname == 'appointment_list' %}active{% endif %}" href="{% url 'appointment_list' %}">All Appointments</a></li>
-                <li><a class="{% if urlname == 'appointment_create' %}active{% endif %}" href="{% url 'appointment_create' %}">Schedule Appointment</a></li> 
-              </ul>
-            </li>
-
-            <!-- Billing - Fixed active conditions -->
-            <li class="sidebar-list {% if urlname in 'service_bill_list,service_bill_create,service_bill_edit,pharmacy_bill_list,pharmacy_sale_create,pharmacy_sale_edit' %}active{% endif %}">
-              <i class="fa fa-thumb-tack"></i>
-              <a class="sidebar-link sidebar-title" href="#">
-                <svg class="stroke-icon"><use href="{% static 'assets/svg/icon-sprite.svg' %}#stroke-to-do"></use></svg>
-                <svg class="fill-icon"><use href="{% static 'assets/svg/icon-sprite.svg' %}#fill-to-do"></use></svg>
-                <span>Billing</span>
-              </a>
-              <ul class="sidebar-submenu">
-                <li><a class="{% if urlname == 'service_bill_list' %}active{% endif %}" href="{% url 'service_bill_list' %}">Service Bills</a></li>
-                <li><a class="{% if urlname == 'service_bill_create' %}active{% endif %}" href="{% url 'service_bill_create' %}">New Service Bill</a></li>
-                <li><hr class="dropdown-divider"></li>
-                <li><a class="{% if urlname == 'pharmacy_bill_list' %}active{% endif %}" href="{% url 'pharmacy_bill_list' %}">Pharmacy Sales</a></li>
-                <li><a class="{% if urlname == 'pharmacy_sale_create' %}active{% endif %}" href="{% url 'pharmacy_sale_create' %}">New Pharmacy Sale</a></li>
-              </ul>
-            </li>
-
-            <!-- Expenses - Fixed condition using 'in' operator -->
-            <li class="sidebar-list {% if urlname in 'expense_list,expense_create,expense_detail,expense_update' %}active{% endif %}">
-              <i class="fa fa-thumb-tack"></i>
-              <a class="sidebar-link sidebar-title link-nav {% if urlname in 'expense_list,expense_create,expense_detail,expense_update' %}active{% endif %}"
-                href="{% url 'expense_list' %}">
+              <a class="sidebar-link sidebar-title {% if urlname in 'expense_list,my_expense_list,expense_create,expense_detail,expense_update' %}active{% endif %}" href="#">
                 <svg class="stroke-icon"><use href="{% static 'assets/svg/icon-sprite.svg' %}#stroke-file"></use></svg>
                 <svg class="fill-icon"><use href="{% static 'assets/svg/icon-sprite.svg' %}#fill-file"></use></svg>
                 <span>Expenses</span>
               </a>
-            </li>
-
-            <!-- Reports -->
-            <li class="sidebar-list {% if urlname == 'finance_report' %}active{% endif %}">
-              <i class="fa fa-thumb-tack"></i>
-              <a class="sidebar-link sidebar-title link-nav {% if urlname == 'finance_report' %}active{% endif %}"
-                href="{% url 'finance_report' %}">
-                <svg class="stroke-icon"><use href="{% static 'assets/svg/icon-sprite.svg' %}#stroke-charts"></use></svg>
-                <svg class="fill-icon"><use href="{% static 'assets/svg/icon-sprite.svg' %}#fill-charts"></use></svg>
-                <span>Reports</span>
-              </a>
-            </li>
-
-            <!-- Leads - Fixed condition using 'in' operator -->
-            <li class="sidebar-list {% if urlname in 'lead_list,lead_create,lead_update,lead_detail,lead_convert' %}active{% endif %}">
-              <i class="fa fa-thumb-tack"></i>
-              <a class="sidebar-link sidebar-title {% if urlname in 'lead_list,lead_create,lead_update,lead_detail,lead_convert' %}active{% endif %}"
-                href="#">
-                <svg class="stroke-icon"><use href="{% static 'assets/svg/icon-sprite.svg' %}#stroke-contact"></use></svg>
-                <svg class="fill-icon"><use href="{% static 'assets/svg/icon-sprite.svg' %}#fill-contact"></use></svg>
-                <span>Leads</span>
-              </a>
               <ul class="sidebar-submenu">
-                <li><a class="{% if urlname == 'lead_list' %}active{% endif %}" href="{% url 'lead_list' %}">All Leads</a></li>
-                <li><a class="{% if urlname == 'lead_create' %}active{% endif %}" href="{% url 'lead_create' %}">Add New Lead</a></li>
+
+                {% if request.user|in_group:"OperationsManager" or request.user|in_group:"Doctor" %}
+                <li><a class="{% if urlname == 'expense_list' %}active{% endif %}" href="{% url 'expense_list' %}">All Expenses</a></li>
+                {% endif %}
+                <li><a class="{% if urlname == 'my_expense_list' %}active{% endif %}" href="{% url 'my_expense_list' %}">My Expenses</a></li>
+                <li><a class="{% if urlname == 'expense_create' %}active{% endif %}" href="{% url 'expense_create' %}">Add New Expense</a></li>
               </ul>
             </li>
 
-            {% if request.user|in_group:"OperationsManager" or request.user|in_group:"Doctor" %}
-              <!-- Staff - Fixed condition using 'in' operator and added create pages -->
-              <li class="sidebar-list {% if urlname in 'staff_list,staff_create,staff_edit,staff_detail' %}active{% endif %}">
-                <i class="fa fa-thumb-tack"></i>
-                <a class="sidebar-link sidebar-title {% if urlname in 'staff_list,staff_create,staff_edit,staff_detail' %}active{% endif %}"
-                  href="#">
-                  <svg class="stroke-icon"><use href="{% static 'assets/svg/icon-sprite.svg' %}#stroke-editors"></use></svg>
-                  <svg class="fill-icon"><use href="{% static 'assets/svg/icon-sprite.svg' %}#fill-editors"></use></svg>
-                  <span>Staff</span>
-                </a>
-                <ul class="sidebar-submenu">
-                  <li><a class="{% if urlname == 'staff_list' %}active{% endif %}" href="{% url 'staff_list' %}">All Staff</a></li>
-                  <li><a class="{% if urlname == 'staff_create' %}active{% endif %}" href="{% url 'staff_create' %}">Add New Staff</a></li>
-                </ul>
-              </li>
-            {% endif %}
+          {% if request.user|in_group:"Receptionist" or request.user|in_group:"OperationsManager" or request.user|in_group:"Doctor" %}
 
-            <!-- Pharmacy - Fixed condition using 'in' operator -->
-            <li class="sidebar-list {% if urlname in 'pharmacy_medicine_list,pharmacy_medicine_create,pharmacy_medicine_detail,pharmacy_medicine_edit,pharmacy_stock_list,pharmacy_stock_adjust,pharmacy_tx_list,pharmacy_tx_create,pharmacy_tx_detail,pharmacy_tx_edit,pharmacy_bill_list,pharmacy_sale_create' %}active{% endif %}">
-              <i class="fa fa-thumb-tack"></i>
-              <a class="sidebar-link sidebar-title" href="#">
-                <svg class="stroke-icon"><use href="{% static 'assets/svg/icon-sprite.svg' %}#stroke-form"></use></svg>
-                <svg class="fill-icon"><use href="{% static 'assets/svg/icon-sprite.svg' %}#fill-form"></use></svg>
-                <span>Pharmacy</span>
-              </a>
-              <ul class="sidebar-submenu">
-                <li><a class="{% if urlname in 'pharmacy_medicine_list,pharmacy_medicine_create,pharmacy_medicine_detail,pharmacy_medicine_edit' %}active{% endif %}" href="{% url 'pharmacy_medicine_list' %}">Medicines</a></li>
-                <li><a class="{% if urlname in 'pharmacy_stock_list,pharmacy_stock_adjust' %}active{% endif %}" href="{% url 'pharmacy_stock_list' %}">Stock</a></li>
-                <li><a class="{% if urlname in 'pharmacy_tx_list,pharmacy_tx_create,pharmacy_tx_detail,pharmacy_tx_edit' %}active{% endif %}" href="{% url 'pharmacy_tx_list' %}">Transactions</a></li>
-                <li><hr class="dropdown-divider"></li>
-                <li><a class="{% if urlname == 'pharmacy_bill_list' %}active{% endif %}" href="{% url 'pharmacy_bill_list' %}">Sales</a></li>
-                <li><a class="{% if urlname == 'pharmacy_sale_create' %}active{% endif %}" href="{% url 'pharmacy_sale_create' %}">New Sale</a></li>
-              </ul>
-            </li>
-          {% endif %}
-          {% if request.user|in_group:"ConsultingDoctor" %}
-            <li class="sidebar-main-title"><div><h6>Clinical</h6></div></li>
-
+            <!-- Patients -->
             <li class="sidebar-list {% if urlname in 'patient_list,patient_create,patient_update,patient_detail' %}active{% endif %}">
               <i class="fa fa-thumb-tack"></i>
               <a class="sidebar-link sidebar-title {% if urlname in 'patient_list,patient_create,patient_update,patient_detail' %}active{% endif %}" href="#">
@@ -192,6 +83,7 @@
               </ul>
             </li>
 
+            <!-- Appointments -->
             <li class="sidebar-list {% if urlname in 'appointment_list,my_appointment_list,appointment_create,appointment_detail,appointment_edit' %}active{% endif %}">
               <i class="fa fa-thumb-tack"></i>
               <a class="sidebar-link sidebar-title {% if urlname in 'appointment_list,my_appointment_list,appointment_create,appointment_detail,appointment_edit' %}active{% endif %}" href="#">
@@ -200,16 +92,73 @@
                 <span>Appointments</span>
               </a>
               <ul class="sidebar-submenu">
+                {% if request.user|in_group:"ConsultingDoctor" or request.user|in_group:"Doctor"%}
                 <li><a class="{% if urlname == 'my_appointment_list' %}active{% endif %}" href="{% url 'my_appointment_list' %}">My Appointment</a></li>
+                {% endif %}
                 <li><a class="{% if urlname == 'appointment_list' %}active{% endif %}" href="{% url 'appointment_list' %}">All Appointments</a></li>
                 <li><a class="{% if urlname == 'appointment_create' %}active{% endif %}" href="{% url 'appointment_create' %}">Schedule Appointment</a></li>
               </ul>
             </li>
-          {% endif %}
 
-          {% if request.user|in_group:"PharmacyManager" and not request.user|in_group:"OperationsManager" %}
-            <li class="sidebar-main-title"><div><h6>Pharmacy</h6></div></li>
-            <!-- Same pharmacy section as above for PharmacyManager -->
+            <!-- Billing -->
+            <li class="sidebar-list {% if urlname in 'service_bill_list,service_bill_create,service_bill_edit,pharmacy_bill_list,pharmacy_sale_create,pharmacy_sale_edit' %}active{% endif %}">
+              <i class="fa fa-thumb-tack"></i>
+              <a class="sidebar-link sidebar-title" href="#">
+                <svg class="stroke-icon"><use href="{% static 'assets/svg/icon-sprite.svg' %}#stroke-to-do"></use></svg>
+                <svg class="fill-icon"><use href="{% static 'assets/svg/icon-sprite.svg' %}#fill-to-do"></use></svg>
+                <span>Billing</span>
+              </a>
+              <ul class="sidebar-submenu">
+                <li><a class="{% if urlname == 'service_bill_list' %}active{% endif %}" href="{% url 'service_bill_list' %}">Service Bills</a></li>
+                <li><a class="{% if urlname == 'service_bill_create' %}active{% endif %}" href="{% url 'service_bill_create' %}">New Service Bill</a></li>
+                
+              </ul>
+            </li>
+
+            <!-- Reports (not for Receptionist) -->
+            {% if not request.user|in_group:'Receptionist' %}
+            <li class="sidebar-list {% if urlname == 'finance_report' %}active{% endif %}">
+              <i class="fa fa-thumb-tack"></i>
+              <a class="sidebar-link sidebar-title link-nav {% if urlname == 'finance_report' %}active{% endif %}"
+                 href="{% url 'finance_report' %}">
+                <svg class="stroke-icon"><use href="{% static 'assets/svg/icon-sprite.svg' %}#stroke-charts"></use></svg>
+                <svg class="fill-icon"><use href="{% static 'assets/svg/icon-sprite.svg' %}#fill-charts"></use></svg>
+                <span>Reports</span>
+              </a>
+            </li>
+            {% endif %}
+
+            <!-- Leads -->
+            <li class="sidebar-list {% if urlname in 'lead_list,lead_create,lead_update,lead_detail,lead_convert' %}active{% endif %}">
+              <i class="fa fa-thumb-tack"></i>
+              <a class="sidebar-link sidebar-title {% if urlname in 'lead_list,lead_create,lead_update,lead_detail,lead_convert' %}active{% endif %}" href="#">
+                <svg class="stroke-icon"><use href="{% static 'assets/svg/icon-sprite.svg' %}#stroke-contact"></use></svg>
+                <svg class="fill-icon"><use href="{% static 'assets/svg/icon-sprite.svg' %}#fill-contact"></use></svg>
+                <span>Leads</span>
+              </a>
+              <ul class="sidebar-submenu">
+                <li><a class="{% if urlname == 'lead_list' %}active{% endif %}" href="{% url 'lead_list' %}">All Leads</a></li>
+                <li><a class="{% if urlname == 'lead_create' %}active{% endif %}" href="{% url 'lead_create' %}">Add New Lead</a></li>
+              </ul>
+            </li>
+
+            {% if request.user|in_group:"OperationsManager" or request.user|in_group:"Doctor" %}
+              <!-- Staff -->
+              <li class="sidebar-list {% if urlname in 'staff_list,staff_create,staff_edit,staff_detail' %}active{% endif %}">
+                <i class="fa fa-thumb-tack"></i>
+                <a class="sidebar-link sidebar-title {% if urlname in 'staff_list,staff_create,staff_edit,staff_detail' %}active{% endif %}" href="#">
+                  <svg class="stroke-icon"><use href="{% static 'assets/svg/icon-sprite.svg' %}#stroke-editors"></use></svg>
+                  <svg class="fill-icon"><use href="{% static 'assets/svg/icon-sprite.svg' %}#fill-editors"></use></svg>
+                  <span>Staff</span>
+                </a>
+                <ul class="sidebar-submenu">
+                  <li><a class="{% if urlname == 'staff_list' %}active{% endif %}" href="{% url 'staff_list' %}">All Staff</a></li>
+                  <li><a class="{% if urlname == 'staff_create' %}active{% endif %}" href="{% url 'staff_create' %}">Add New Staff</a></li>
+                </ul>
+              </li>
+            {% endif %}
+
+            <!-- Pharmacy -->
             <li class="sidebar-list {% if urlname in 'pharmacy_medicine_list,pharmacy_medicine_create,pharmacy_medicine_detail,pharmacy_medicine_edit,pharmacy_stock_list,pharmacy_stock_adjust,pharmacy_tx_list,pharmacy_tx_create,pharmacy_tx_detail,pharmacy_tx_edit,pharmacy_bill_list,pharmacy_sale_create' %}active{% endif %}">
               <i class="fa fa-thumb-tack"></i>
               <a class="sidebar-link sidebar-title" href="#">
@@ -226,25 +175,77 @@
                 <li><a class="{% if urlname == 'pharmacy_sale_create' %}active{% endif %}" href="{% url 'pharmacy_sale_create' %}">New Sale</a></li>
               </ul>
             </li>
+          {% endif %}
 
-            <li class="sidebar-list {% if urlname in 'expense_list,expense_create,expense_detail,expense_update' %}active{% endif %}">
+          {% if request.user|in_group:"ConsultingDoctor" %}
+            <li class="sidebar-main-title"><div><h6>Clinical</h6></div></li>
+
+            <li class="sidebar-list {% if urlname in 'patient_list,patient_create,patient_update,patient_detail' %}active{% endif %}">
               <i class="fa fa-thumb-tack"></i>
-              <a class="sidebar-link sidebar-title link-nav {% if urlname in 'expense_list,expense_create,expense_detail,expense_update' %}active{% endif %}"
-                href="{% url 'expense_list' %}">
-                <svg class="stroke-icon"><use href="{% static 'assets/svg/icon-sprite.svg' %}#stroke-file"></use></svg>
-                <svg class="fill-icon"><use href="{% static 'assets/svg/icon-sprite.svg' %}#fill-file"></use></svg>
-                <span>Expenses</span>
+              <a class="sidebar-link sidebar-title {% if urlname in 'patient_list,patient_create,patient_update,patient_detail' %}active{% endif %}" href="#">
+                <svg class="stroke-icon"><use href="{% static 'assets/svg/icon-sprite.svg' %}#stroke-staffs"></use></svg>
+                <svg class="fill-icon"><use href="{% static 'assets/svg/icon-sprite.svg' %}#fill-staffs"></use></svg>
+                <span>Patients</span>
               </a>
+              <ul class="sidebar-submenu">
+                <li><a class="{% if urlname == 'patient_list' %}active{% endif %}" href="{% url 'patient_list' %}">All Patients</a></li>
+              </ul>
             </li>
+
+            <li class="sidebar-list {% if urlname in 'appointment_list,my_appointment_list,appointment_create,appointment_detail,appointment_edit' %}active{% endif %}">
+              <i class="fa fa-thumb-tack"></i>
+              <a class="sidebar-link sidebar-title {% if urlname in 'appointment_list,my_appointment_list,appointment_create,appointment_detail,appointment_edit' %}active{% endif %}" href="#">
+                <svg class="stroke-icon"><use href="{% static 'assets/svg/icon-sprite.svg' %}#stroke-calendar"></use></svg>
+                <svg class="fill-icon"><use href="{% static 'assets/svg/icon-sprite.svg' %}#fill-calender"></use></svg>
+                <span>Appointments</span>
+              </a>
+              <ul class="sidebar-submenu">
+                <li><a class="{% if urlname == 'my_appointment_list' %}active{% endif %}" href="{% url 'my_appointment_list' %}">My Appointment</a></li>          
+                <li><a class="{% if urlname == 'appointment_create' %}active{% endif %}" href="{% url 'appointment_create' %}">Schedule Appointment</a></li>
+              </ul>
+            </li>
+          {% endif %}
+
+          {% if request.user|in_group:"PharmacyManager" and not request.user|in_group:"OperationsManager" %}
+            <li class="sidebar-main-title"><div><h6>Pharmacy</h6></div></li>
+
+            <li class="sidebar-list {% if urlname in 'pharmacy_medicine_list,pharmacy_medicine_create,pharmacy_medicine_detail,pharmacy_medicine_edit,pharmacy_stock_list,pharmacy_stock_adjust,pharmacy_tx_list,pharmacy_tx_create,pharmacy_tx_detail,pharmacy_tx_edit,pharmacy_bill_list,pharmacy_sale_create' %}active{% endif %}">
+              <i class="fa fa-thumb-tack"></i>
+              <a class="sidebar-link sidebar-title" href="#">
+                <svg class="stroke-icon"><use href="{% static 'assets/svg/icon-sprite.svg' %}#stroke-form"></use></svg>
+                <svg class="fill-icon"><use href="{% static 'assets/svg/icon-sprite.svg' %}#fill-form"></use></svg>
+                <span>Pharmacy</span>
+              </a>
+              <ul class="sidebar-submenu">
+                <li><a class="{% if urlname in 'pharmacy_medicine_list,pharmacy_medicine_create,pharmacy_medicine_detail,pharmacy_medicine_edit' %}active{% endif %}" href="{% url 'pharmacy_medicine_list' %}">Medicines</a></li>
+                <li><a class="{% if urlname in 'pharmacy_stock_list,pharmacy_stock_adjust' %}active{% endif %}" href="{% url 'pharmacy_stock_list' %}">Stock</a></li>
+                <li><a class="{% if urlname in 'pharmacy_tx_list,pharmacy_tx_create,pharmacy_tx_detail,pharmacy_tx_edit' %}active{% endif %}" href="{% url 'pharmacy_tx_list' %}">Transactions</a></li>
+                <li><hr class="dropdown-divider"></li>
+                <li><a class="{% if urlname == 'pharmacy_bill_list' %}active{% endif %}" href="{% url 'pharmacy_bill_list' %}">Sales</a></li>
+                <li><a class="{% if urlname == 'pharmacy_sale_create' %}active{% endif %}" href="{% url 'pharmacy_sale_create' %}">New Sale</a></li>
+              </ul>
+            </li>
+            {# NOTE: The role-gated Expenses item previously here has been removed in favor of the global item above #}
           {% endif %}
 
           {% if request.user|in_group:"CRO" %}
             <li class="sidebar-main-title"><div><h6>CRM</h6></div></li>
 
+
+              <li class="sidebar-list {% if urlname in 'patient_list,patient_create,patient_update,patient_detail' %}active{% endif %}">
+                <i class="fa fa-thumb-tack"></i>
+                <a class="sidebar-link sidebar-title link-nav {% if urlname in 'patient_list,patient_create,patient_update,patient_detail' %}active{% endif %}"
+                  href="{% url 'patient_list' %}">
+                  <svg class="stroke-icon"><use href="{% static 'assets/svg/icon-sprite.svg' %}#stroke-staffs"></use></svg>
+                  <svg class="fill-icon"><use href="{% static 'assets/svg/icon-sprite.svg' %}#fill-staffs"></use></svg>
+                  <span>Patients</span>
+                </a>
+              </li>
+
             <li class="sidebar-list {% if urlname in 'lead_list,lead_create,lead_update,lead_detail,lead_convert' %}active{% endif %}">
               <i class="fa fa-thumb-tack"></i>
               <a class="sidebar-link sidebar-title link-nav {% if urlname in 'lead_list,lead_create,lead_update,lead_detail,lead_convert' %}active{% endif %}"
-                href="{% url 'lead_list' %}">
+                 href="{% url 'lead_list' %}">
                 <svg class="stroke-icon"><use href="{% static 'assets/svg/icon-sprite.svg' %}#stroke-contact"></use></svg>
                 <svg class="fill-icon"><use href="{% static 'assets/svg/icon-sprite.svg' %}#fill-contact"></use></svg>
                 <span>Leads</span>
@@ -254,31 +255,23 @@
             <li class="sidebar-list {% if urlname in 'appointment_list,appointment_create,appointment_detail,appointment_edit' %}active{% endif %}">
               <i class="fa fa-thumb-tack"></i>
               <a class="sidebar-link sidebar-title link-nav {% if urlname in 'appointment_list,appointment_create,appointment_detail,appointment_edit' %}active{% endif %}"
-                href="{% url 'appointment_list' %}">
+                 href="{% url 'appointment_list' %}">
                 <svg class="stroke-icon"><use href="{% static 'assets/svg/icon-sprite.svg' %}#stroke-calendar"></use></svg>
                 <svg class="fill-icon"><use href="{% static 'assets/svg/icon-sprite.svg' %}#fill-calender"></use></svg>
                 <span>Appointments</span>
               </a>
             </li>
 
-            <li class="sidebar-list {% if urlname in 'patient_list,patient_create,patient_update,patient_detail' %}active{% endif %}">
-              <i class="fa fa-thumb-tack"></i>
-              <a class="sidebar-link sidebar-title link-nav {% if urlname in 'patient_list,patient_create,patient_update,patient_detail' %}active{% endif %}"
-                href="{% url 'patient_list' %}">
-                <svg class="stroke-icon"><use href="{% static 'assets/svg/icon-sprite.svg' %}#stroke-staffs"></use></svg>
-                <svg class="fill-icon"><use href="{% static 'assets/svg/icon-sprite.svg' %}#fill-staffs"></use></svg>
-                <span>Patients</span>
-              </a>
-            </li>
+
+            
           {% endif %}
 
-          {# Staff (light) #}
           {% if request.user|in_group:"Staff" and not request.user|in_group:"Receptionist" and not request.user|in_group:"CRO" and not request.user|in_group:"PharmacyManager" and not request.user|in_group:"OperationsManager" and not request.user|in_group:"Doctor" %}
             <li class="sidebar-main-title"><div><h6>Workspace</h6></div></li>
             <li class="sidebar-list {% if urlname in 'patient_list,patient_create,patient_update,patient_detail' %}active{% endif %}">
               <i class="fa fa-thumb-tack"></i>
               <a class="sidebar-link sidebar-title link-nav {% if urlname in 'patient_list,patient_create,patient_update,patient_detail' %}active{% endif %}"
-                href="{% url 'patient_list' %}">
+                 href="{% url 'patient_list' %}">
                 <svg class="stroke-icon"><use href="{% static 'assets/svg/icon-sprite.svg' %}#stroke-staffs"></use></svg>
                 <svg class="fill-icon"><use href="{% static 'assets/svg/icon-sprite.svg' %}#fill-staffs"></use></svg>
                 <span>Patients</span>
@@ -287,7 +280,7 @@
             <li class="sidebar-list {% if urlname in 'appointment_list,appointment_create,appointment_detail,appointment_edit' %}active{% endif %}">
               <i class="fa fa-thumb-tack"></i>
               <a class="sidebar-link sidebar-title link-nav {% if urlname in 'appointment_list,appointment_create,appointment_detail,appointment_edit' %}active{% endif %}"
-                href="{% url 'appointment_list' %}">
+                 href="{% url 'appointment_list' %}">
                 <svg class="stroke-icon"><use href="{% static 'assets/svg/icon-sprite.svg' %}#stroke-calendar"></use></svg>
                 <svg class="fill-icon"><use href="{% static 'assets/svg/icon-sprite.svg' %}#fill-calender"></use></svg>
                 <span>Appointments</span>

@@ -179,6 +179,16 @@ def dashboard(request):
         s=Coalesce(Sum(F('total_amount') - F('paid_amount')), Decimal('0.00'))
     )['s']
 
+    # NEW: Doctor's own appointments in selected date range
+    is_doctor = request.user.groups.filter(name__in=["Doctor", "ConsultingDoctor"]).exists()
+    my_appts_count = 0
+    if is_doctor:
+        my_appts_count = Appointment.objects.filter(
+            assigned_doctor_id=request.user.id,
+            appointment_date__date__gte=start,
+            appointment_date__date__lte=end
+        ).count()
+
     # Low stock / Expenses (independent)
     low_stock_qs = (MedicineStock.objects
                     .select_related('medicine')
@@ -258,6 +268,7 @@ def dashboard(request):
             'pending_exp_amount': pending_exp_amount,
             'open_leads_count': Lead.objects.filter(converted_patient__isnull=True).count(),
             'conversion_rate': conversion_rate,
+            'my_appts_count': my_appts_count,
         },
         'upcoming': upcoming,
         'recent_bills': recent_bills,
@@ -1978,7 +1989,7 @@ def lead_convert(request, pk):
     return render(request, 'leads/convert.html', {'form': form, 'lead': lead})
 
 # ---------------- Expenses ----------------
-@group_required('OperationsManager','Doctor')
+@group_required('OperationsManager','Doctor','ConsultingDoctor')
 def expense_list(request):
     status = (request.GET.get('status') or '').strip()
     range_param = (request.GET.get('range') or '').strip()
@@ -2060,6 +2071,91 @@ def expense_list(request):
     }
     return render(request, 'expenses/list.html', ctx)
 
+
+@login_required
+def my_expense_list(request):
+    """
+    List only the expenses created/requested by the current user.
+    Same UX as expense_list: quick ranges, manual dates, status, 'All Pending', total.
+    """
+    status      = (request.GET.get('status') or '').strip()
+    range_param = (request.GET.get('range') or '').strip()
+    pending_all = request.GET.get('pending_all') == '1'
+
+    today    = timezone.localdate()
+    start_str = request.GET.get('from') or request.GET.get('start') or request.GET.get('date')
+    end_str   = request.GET.get('to')   or request.GET.get('end')
+
+    def parse_iso(d, default=None):
+        try:
+            return date.fromisoformat(d) if d else default
+        except ValueError:
+            return default
+
+    # Date window
+    if pending_all and status == 'pending':
+        start = None
+        end   = None
+    else:
+        if range_param:
+            if range_param == 'today':
+                start = today
+                end   = today
+            elif range_param == '7d':
+                start = today - timedelta(days=6)
+                end   = today
+            elif range_param == 'month':
+                start = today.replace(day=1)
+                if today.month == 12:
+                    end = today.replace(year=today.year+1, month=1, day=1) - timedelta(days=1)
+                else:
+                    end = today.replace(month=today.month+1, day=1) - timedelta(days=1)
+            else:
+                start = parse_iso(start_str, today)
+                end   = parse_iso(end_str, None)
+        else:
+            start = parse_iso(start_str, today)
+            end   = parse_iso(end_str, None)
+
+    qs = (
+        Expense.objects
+        .select_related('category','requested_by','approved_by')
+        .filter(requested_by=request.user)           # <<< ONLY my expenses
+        .order_by('-expense_date')
+    )
+
+    # Date filters (skip when "All Pending")
+    if not (pending_all and status == 'pending'):
+        if start:
+            qs = qs.filter(expense_date__gte=start)
+        if end:
+            if start and end < start:
+                start, end = end, start
+                qs = qs.filter(expense_date__gte=start)
+            qs = qs.filter(expense_date__lte=end)
+
+    # Status filter
+    if status and status != 'all' and status in dict(Expense.STATUS_CHOICES):
+        qs = qs.filter(status=status)
+
+    total_amount = qs.aggregate(total=Coalesce(Sum('amount'), Decimal('0.00')))['total']
+
+    ctx = {
+        'expenses': qs,
+        'status_choices': Expense.STATUS_CHOICES,
+        'status_choicesfilter': [('all','All')] + list(Expense.STATUS_CHOICES),
+        'selected_status': status or 'all',
+        'selected': {
+            'from': start,
+            'to': end,
+            'status': status or 'all',
+            'range': range_param,
+        },
+        'total_amount': total_amount,
+        'is_my_expenses': True,   # for template title/labels
+    }
+    return render(request, 'expenses/my_list.html', ctx)
+
 def expense_create(request):
     if request.method == 'POST':
         form = ExpenseForm(request.POST, request.FILES, user=request.user)
@@ -2078,7 +2174,7 @@ def expense_create(request):
         form = ExpenseForm(user=request.user)
     return render(request, 'expenses/form.html', {'form': form, 'is_edit': False, 'can_edit_status': user_can_edit_status(request.user)})
 
-@group_required('OperationsManager','Doctor')
+
 def expense_update(request, pk):
     expense = get_object_or_404(Expense, pk=pk)
     if request.method == 'POST':
