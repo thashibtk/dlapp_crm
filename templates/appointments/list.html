@@ -1,0 +1,530 @@
+{% extends 'base.html' %}
+{% block content %}
+{% load static %}
+
+<style>
+      /* Adjusting the search filter within the flex container */
+      div.dataTables_wrapper div.dataTables_filter {
+        position: static;
+        top: auto;
+        right: auto;
+        flex: 1 1 auto;
+        min-width: 200px;
+        max-width: 300px;
+        margin-left: auto;
+        text-align: right;
+      }
+
+      /* Adjust for small screens */
+      @media (max-width: 767px) {
+        div.dataTables_wrapper div.dataTables_filter {
+          flex: 1 1 100%;
+          min-width: unset;
+          max-width: unset;
+          margin-left: 0;
+          text-align: left;
+          order: -1;
+          padding: 10px 0;
+        }
+      }
+</style>
+<style>
+  /* --- Print Styles - A4 Table List --- */
+  .print-table-container {
+    display: none;
+  }
+
+  @media print {
+  @page {
+    size: A4 portrait;
+    margin: 10mm 8mm 15mm 8mm;
+  }
+
+  body {
+    margin: 0 !important;
+    padding: 0 !important;
+    font-family: Arial, Helvetica, sans-serif !important;
+    font-size: 10pt !important;
+    line-height: 1.2 !important;
+    color: #000 !important;
+    background: #fff !important;
+    width: 100% !important;
+  }
+
+  /* Hide everything by default */
+  body * {
+    visibility: hidden !important;
+  }
+
+  /* Show only the print container and its contents */
+  .print-table-container,
+  .print-table-container * {
+    visibility: visible !important;
+  }
+
+  /* Place the print container at the top-left for clean layout */
+  .print-table-container {
+    display: block !important;
+    position: absolute !important;
+    left: 0 !important;
+    top: 0 !important;
+    width: 100% !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    background: #fff !important;
+  }
+
+  .print-header {
+    display: flex !important;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 30px;
+    border-bottom: 2px solid #333;
+    padding-bottom: 10px;
+  }
+
+  .print-header-left { text-align: left; }
+  .print-header-right { text-align: right; }
+
+  .print-header img { width: 80px; height: auto; }
+
+  .print-header h1 {
+    font-size: 24px;
+    font-weight: bold;
+    color: #2b5f60;
+    margin: 0;
+  }
+
+  .print-header p {
+    margin: 5px 0;
+    font-size: 12px;
+    color: #555;
+  }
+
+  .print-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 20px;
+  }
+
+  * {
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+    color-adjust: exact !important;
+  }
+
+  .print-table th,
+  .print-table td {
+    border: 1px solid #ddd;
+    padding: 6px;
+    text-align: left;
+    font-size: 11px;
+  }
+
+  .print-table th {
+    background-color: #2b5f60 !important;
+    color: #fff !important;
+    font-weight: bold;
+  }
+
+  .print-table tbody tr:nth-child(even) {
+    background-color: #f9f9f9 !important;
+  }
+
+  .print-footer {
+    text-align: center;
+    margin-top: 50px;
+    font-size: 10px;
+    color: #666;
+  }
+}
+
+</style>
+
+
+
+<div class="container-fluid default-dashboard">
+  <div class="row">
+
+    <!-- Header -->
+    <div class="col-12 project-list">
+      <div class="card">
+          <div class="row align-items-center">
+              <div class="col-6 p-0">
+                  <ul class="nav nav-tabs border-tab d-flex" role="tablist">
+                      <li class="nav-item">
+                          <a class="nav-link active" href="#" role="tab" aria-selected="true">
+                              <i class="fa fa-calendar-check-o me-2"></i>Appointments
+                          </a>
+                      </li>
+                      <li class="nav-item">
+                          <span class="text-muted small">
+                              <i class="fa fa-hashtag me-1"></i>Total: {{ appointments|length }}
+                          </span>
+                      </li>
+                  </ul>
+              </div>
+              <div class="col-6 p-0 d-flex justify-content-end align-items-center gap-2">
+                  <a class="btn btn-primary" href="{% url 'appointment_create' %}">
+                      <i class="fa fa-plus-square me-2"></i>New Appointment
+                  </a>
+              </div>
+          </div>
+      </div>
+    </div>
+
+    <!-- Filters -->
+    <div class="col-md-12">
+      <form class="card p-3 mb-3 " method="get" id="filterForm">
+        <div class="row g-3 align-items-end">
+          <!-- Quick range -->
+          <div class="col-12 col-lg-4">
+            <label class="form-label mb-1 small text-muted"><i class="fa fa-bolt me-1"></i>Quick range</label>
+            <div class="btn-group w-100" role="group">
+              <button class="btn btn-outline-secondary" type="button" data-range="today">
+                <i class="fa fa-calendar me-1"></i>Today
+              </button>
+              <button class="btn btn-outline-secondary" type="button" data-range="7d">
+                <i class="fa fa-calendar me-1"></i>Last 7 days
+              </button>
+              <button class="btn btn-outline-secondary" type="button" data-range="month">
+                <i class="fa fa-calendar me-1"></i>This month
+              </button>
+            </div>
+          </div>
+
+          <!-- From / To -->
+          <div class="col-6 col-lg-2">
+            <label class="form-label mb-1 small text-muted"><i class="fa fa-sign-in me-1"></i>From</label>
+            <input type="date" class="form-control" name="from"
+                   value="{{ selected.from|date:'Y-m-d' }}"
+                   max="{{ selected.to|date:'Y-m-d' }}">
+          </div>
+          <div class="col-6 col-lg-2">
+            <label class="form-label mb-1 small text-muted"><i class="fa fa-sign-out me-1"></i>To</label>
+            <input type="date" class="form-control" name="to"
+                   value="{{ selected.to|date:'Y-m-d' }}"
+                   min="{{ selected.from|date:'Y-m-d' }}">
+          </div>
+
+          <!-- Doctor -->
+          <div class="col-12 col-lg-2">
+            <label class="form-label mb-1 small text-muted"><i class="fa fa-user-md me-1"></i>Doctor</label>
+            <select class="form-select" name="doctor">
+              <option value="" {% if not selected.doctor %}selected{% endif %}>
+                All
+              </option>
+              {% for d in doctors %}
+                <option value="{{ d.pk }}" {% if selected.doctor == d.pk|stringformat:'s' %}selected{% endif %}>
+                  {{ d.get_full_name|default:d.username }}
+                </option>
+              {% endfor %}
+            </select>
+          </div>
+
+          <!-- Status -->
+          <div class="col-12 col-lg-2">
+            <label class="form-label mb-1 small text-muted"><i class="fa fa-list me-1"></i>Status</label>
+            <select class="form-select" name="status">
+              {% for v,label in status_choicesfilter %}
+                <option value="{{ v }}" {% if selected.status == v %}selected{% endif %}>{{ label }}</option>
+              {% endfor %}
+            </select>
+          </div>
+
+          <!-- Actions -->
+          <div class="col-12 d-flex flex-wrap gap-2 justify-content-lg-end">
+            <button class="btn btn-outline-secondary" type="submit">
+              <i class="fa fa-filter me-2"></i>Filter
+            </button>
+            <a class="btn btn-light" href="{% url 'appointment_list' %}">
+              <i class="fa fa-refresh me-2"></i>Clear
+            </a>
+            <button type="button" class="btn btn-outline-success" onclick="printAppointments()">
+              <i class="fa fa-print me-2"></i>Print
+            </button>
+
+          </div>
+        </div>
+      </form>
+    </div>
+
+    <!-- Table -->
+    <div class="col-sm-12">
+      <div class="card shadow-sm">
+        <div class="card-body">
+          <div class="table-responsive custom-scrollbar">
+            <table class="table table-hover table-sm  align-middle display" id="basic-1">
+              <thead>
+                <tr>
+                  <th class="text-nowrap">#</th>
+                  <th class="text-nowrap"><i class="fa fa-clock-o me-1"></i>Date & Time</th>
+                  <th><i class="fa fa-user me-1"></i>Patient</th>
+                  <th><i class="fa fa-phone me-1"></i>Phone</th>
+                  <th class="text-nowrap"><i class="fa fa-user-md me-1"></i>Doctor</th>
+                  <th class="text-nowrap"><i class="fa fa-flag me-1"></i>Status</th>
+                  <th class="text-nowrap "><i class="fa fa-pen-to-square me-1"></i>Update</th>
+                  <th class="text-nowrap"><i class="fa fa-ellipsis-h me-1"></i>Action</th>
+                </tr>
+              </thead>
+              <tbody>
+                {% for a in appointments %}
+                <tr>
+                  <td class="text-nowrap">
+                    <a class="font-primary text-decoration-none" href="{% url 'appointment_detail' a.pk %}">
+                      {{ forloop.counter }}
+                    </a>
+                  </td>
+                  <td class="text-nowrap">{{ a.appointment_date|date:"d-M-Y " }} <br>
+                    <span class="text-muted">{{ a.appointment_date|date:"h:i A" }}</span>
+                  </td>
+                  <td class="text-nowrap">
+                    <a class="font-primary text-decoration-none" href="{% url 'patient_detail' a.patient.pk %}">
+                      {{ a.patient.name }}<br>
+                      
+                      {% if a.patient.city %}<div class="small text-muted">{{ a.patient.city }}</div>{% endif %}
+                    </a>
+                  </td>
+                  <td class="text-nowrap">{{ a.patient.phone_number|default:"—" }}
+                  </td>
+                  <td class="text-nowrap">
+                    {% if a.assigned_doctor %}
+                      {{ a.assigned_doctor.get_full_name|default:a.assigned_doctor.username }}
+                    {% else %}&mdash;{% endif %}
+                  </td>
+                  <td>
+                    {% if a.status == 'scheduled' %}
+                      <span class="badge text-bg-secondary"><i class="fa fa-circle me-1"></i>Scheduled</span>
+                    {% elif a.status == 'completed' %}
+                      <span class="badge text-bg-success"><i class="fa fa-check-circle me-1"></i>Completed</span>
+                    {% elif a.status == 'cancelled' %}
+                      <span class="badge text-bg-danger"><i class="fa fa-times-circle me-1"></i>Cancelled</span>
+                    {% elif a.status == 'rescheduled' %}
+                      <span class="badge text-bg-info"><i class="fa fa-check me-1"></i>Rescheduled</span>
+                    {% else %}
+                      <span class="badge text-bg-light text-muted">{{ a.get_status_display }}</span>
+                    {% endif %}
+                  </td>
+                  <td class="" style="min-width: 100px;">
+                      <form method="post" action="{% url 'appointment_update_status' pk=a.pk %}" class="d-inline status-form" id="status-form-{{ a.pk }}">
+                          {% csrf_token %}
+                          <select name="status" class="form-select form-select-sm w-50" onchange="handleStatusChange(this, '{{ a.pk }}')">
+                              {% if a.status == 'scheduled' %}
+                                  <option value="scheduled" selected>Scheduled</option>
+                                  <option value="completed">Completed</option>
+                                  <option value="cancelled">Cancelled</option>
+                                  <option value="rescheduled">Rescheduled</option>
+                              {% else %}
+                                  <option value="scheduled" disabled>Scheduled</option>
+                                  <option value="completed" {% if a.status == 'completed' %}selected{% endif %}>Completed</option>
+                                  <option value="cancelled" {% if a.status == 'cancelled' %}selected{% endif %}>Cancelled</option>
+                                  <option value="rescheduled" {% if a.status == 'rescheduled' %}selected{% endif %}>Rescheduled</option>
+                              {% endif %}
+                          </select>
+                      </form>
+                  </td>
+                  <td>
+                    <a class="btn btn-sm btn-outline-secondary" href="{% url 'appointment_detail' a.pk %}">
+                      <i class="fa fa-eye me-1"></i>View
+                    </a>
+                  </td>
+                </tr>
+                {% empty %}
+                <tr class="bg-light">
+                  <td colspan="8" class="text-center text-muted py-4">
+                    <i class="fa fa-inbox me-2"></i>No appointments.
+                  </td>
+                </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+
+<div class="print-table-container">
+  <div class="print-header">
+    <div class="print-header-left">
+      <img src="{% static 'assets/images/logo/dlapp_logo_grncut.png' %}" alt="DLapp">
+    </div>
+    <div class="print-header-right">
+        <h1>D Lapp Hair Regenerative Clinic</h1>
+        <p>Kottayil Arcade, Malaparamba,<br> Kozhikode, Kerala 673009<br>
+          Phone: +91 8593957885 | Email: info@dlapphairclinic.com
+        </p>
+    </div>
+  </div>
+
+  <div style="text-align: center; margin-bottom: 20px;">
+    <h2 style="font-size: 18px; margin-bottom: 5px;">Appointments List</h2>
+    <p>
+      Doctor: <span id="printDoctorDisplay"></span> |
+      Status: <span id="printStatusDisplay"></span> |
+      Date Range: <span id="printDateRangeDisplay"></span>
+    </p>
+  </div>
+
+  <table class="print-table">
+    <thead>
+      <tr>
+        <th style="width: 5%;">#</th>
+        <th style="width: 20%;">Date & Time</th>
+        <th style="width: 20%;">Patient</th>
+        <th style="width: 15%;">Phone</th>
+        <th style="width: 20%;">Doctor</th>
+        <th style="width: 20%;">Status</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for a in appointments %}
+      <tr>
+        <td>{{ forloop.counter }}</td>
+        <td>{{ a.appointment_date|date:"d-M-Y h:i A" }}</td>
+        <td>{{ a.patient.name }}</td>
+        <td>{{ a.patient.phone_number|default:"—" }}</td>
+        <td>{% if a.assigned_doctor %}{{ a.assigned_doctor.get_full_name|default:a.assigned_doctor.username }}{% else %}—{% endif %}</td>
+        <td>{{ a.get_status_display }}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+
+  <div class="print-footer">
+    Generated by {{ request.user.get_full_name|default:request.user.username }} on {% now "F d, Y, h:i A" %}
+  </div>
+</div>
+
+
+<script>
+function printAppointments() {
+  const doctorSelect = document.querySelector('select[name="doctor"]');
+  const statusSelect = document.querySelector('select[name="status"]');
+  const fromDate = document.querySelector('input[name="from"]').value;
+  const toDate = document.querySelector('input[name="to"]').value;
+
+  // Doctor filter
+  document.getElementById('printDoctorDisplay').textContent = 
+    doctorSelect && doctorSelect.value ? doctorSelect.options[doctorSelect.selectedIndex].text : 'All';
+
+  // Status filter
+  document.getElementById('printStatusDisplay').textContent = 
+    statusSelect && statusSelect.value ? statusSelect.options[statusSelect.selectedIndex].text : 'All';
+
+  // Date Range
+  let dateRange = 'All Dates';
+  if (fromDate && toDate) {
+    dateRange = `From ${fromDate} to ${toDate}`;
+  } else if (fromDate) {
+    dateRange = `From ${fromDate}`;
+  } else if (toDate) {
+    dateRange = `To ${toDate}`;
+  }
+  document.getElementById('printDateRangeDisplay').textContent = dateRange;
+
+  window.print();
+}
+</script>
+
+
+<script>
+function handleStatusChange(sel, pk) {
+  if (sel.value === 'rescheduled') {
+    window.location.href = "/appointments/" + pk + "/reschedule/";
+  } else {
+    sel.form.submit();
+  }
+}
+
+document.addEventListener('DOMContentLoaded', function(){
+  const form = document.getElementById('filterForm');
+  if (!form) return;
+
+  const fromI = form.querySelector('input[name="from"]');
+  const toI   = form.querySelector('input[name="to"]');
+  const qBtns = form.querySelectorAll('[data-range]');
+
+  // ---- date helpers (local time) ----
+  const pad = n => String(n).padStart(2,'0');
+  const fmt = d => `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`;
+  const parseISO = s => {
+    if (!s) return null;
+    const [y,m,d] = s.split('-').map(Number);
+    return new Date(y, m-1, d);
+  };
+  const today = (() => { const n=new Date(); return new Date(n.getFullYear(), n.getMonth(), n.getDate()); })();
+  const start7d   = new Date(today.getFullYear(), today.getMonth(), today.getDate() - 6);
+  const monthStart= new Date(today.getFullYear(), today.getMonth(), 1);
+  const monthEnd  = new Date(today.getFullYear(), today.getMonth()+1, 0);
+
+  // ---- UI helpers ----
+  const clearActive = () => qBtns.forEach(b => { b.classList.remove('active'); b.setAttribute('aria-pressed','false'); });
+  const setActive = btn => { clearActive(); if (btn) { btn.classList.add('active'); btn.setAttribute('aria-pressed','true'); } };
+
+  const syncMinMax = () => {
+    if (!fromI || !toI) return;
+    toI.min = fromI.value || '';
+    fromI.max = toI.value || '';
+  };
+
+  // Infer which quick range is active based on inputs
+  const inferActiveFromInputs = () => {
+    const f = parseISO(fromI?.value);
+    const t = parseISO(toI?.value);
+    if (!f || !t) { clearActive(); return; }
+    const fISO = fmt(f), tISO = fmt(t);
+    if (fISO === fmt(today) && tISO === fmt(today)) {
+      setActive(form.querySelector('[data-range="today"]')); return;
+    }
+    if (fISO === fmt(start7d) && tISO === fmt(today)) {
+      setActive(form.querySelector('[data-range="7d"]')); return;
+    }
+    if (fISO === fmt(monthStart) && tISO === fmt(monthEnd)) {
+      setActive(form.querySelector('[data-range="month"]')); return;
+    }
+    clearActive();
+  };
+
+  // Init
+  inferActiveFromInputs();
+  syncMinMax();
+
+  // Quick range clicks -> set dates, activate, submit
+  qBtns.forEach(btn => {
+    btn.addEventListener('click', () => {
+      const kind = btn.getAttribute('data-range');
+      let f = new Date(today), t = new Date(today);
+      if (kind === '7d') {
+        f = start7d; t = today;
+      } else if (kind === 'month') {
+        f = monthStart; t = monthEnd;
+      } // 'today' default
+
+      if (fromI) fromI.value = fmt(f);
+      if (toI)   toI.value   = fmt(t);
+      syncMinMax();
+      setActive(btn);
+      form.submit();
+    });
+  });
+
+  // Manual date edits -> clear quick range active, keep constraints, NO auto-submit
+  const handleDateChange = () => {
+    // Prevent inverted range
+    if (fromI?.value && toI?.value && toI.value < fromI.value) {
+      toI.value = fromI.value;
+    }
+    syncMinMax();
+    clearActive();
+  };
+  fromI?.addEventListener('input', handleDateChange);
+  toI?.addEventListener('input', handleDateChange);
+});
+</script>
+
+
+{% endblock %}

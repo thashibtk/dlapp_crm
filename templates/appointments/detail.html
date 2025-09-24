@@ -1,0 +1,242 @@
+{% extends 'base.html' %}
+{% block content %}
+
+<div class="container-fluid default-dashboard">
+  <div class="row">
+
+    <!-- Header -->
+    <div class="col-md-12 project-list">
+      <div class="card">
+        <div class="row">
+          <div class="col-md-6 p-0">
+            <ul class="nav nav-tabs border-tab d-flex" role="tablist">
+              <li class="nav-item">
+                <a class="nav-link active" href="#" role="tab" aria-selected="true">
+                  <i data-feather="calendar"></i>
+                  Appointment • {{ a.patient.name }}
+                  {% if a.patient.file_number %}
+                    <small class="text-muted d-block d-sm-inline">({{ a.patient.file_number }})</small>
+                  {% endif %}
+                </a>
+              </li>
+            </ul>
+          </div>
+          <div class="col-md-6 p-0 d-flex justify-content-end align-items-center gap-2">
+            <a class="btn btn-outline-secondary" href="{% url 'appointment_list' %}">
+              <i class="fa fa-arrow-left me-2"></i>Back to Appointments
+            </a>
+            <a class="btn btn-outline-primary" href="{% url 'appointment_reschedule' pk=a.pk %}">
+              <i class="fa fa-refresh me-2"></i>Reschedule
+            </a>
+            <a class="btn btn-primary" href="{% url 'appointment_edit' pk=a.pk %}">
+              <i class="fa fa-pencil me-2"></i>Edit
+            </a>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Body -->
+    <div class="col-md-12">
+      <div class="card">
+        <div class="card-body">
+          <div class="row g-3">
+
+            <!-- When & Who -->
+            <div class="col-lg-6">
+              <div class="card p-3 h-100">
+                <h6 class="text-muted mb-3">Details</h6>
+
+                <div class="row row-cols-1 row-cols-sm-2 g-2">
+                  <div><b>Date:</b> {{ a.appointment_date|date:"d-M-Y" }}</div>
+                  <div><b>Time:</b> {{ a.appointment_date|date:"h:i A" }}</div>
+
+                  <div class="col-12">
+                    <b>Patient:</b>
+                    <a class="font-primary text-decoration-none" href="{% url 'patient_detail' a.patient.pk %}">
+                      {{ a.patient.name }}
+                    </a>
+                  </div>
+
+                  <div>
+                    <b>Doctor:</b>
+                    {% if a.assigned_doctor %}
+                      {{ a.assigned_doctor.get_full_name|default:a.assigned_doctor.username }}
+                    {% else %}&mdash;{% endif %}
+                  </div>
+
+                  <div>
+                    <b>Sitting:</b> {{ a.get_sittings_display }}
+                  </div>
+
+                  {% if a.treatment_plan %}
+                  <div class="col-12">
+                    <b>Treatment Plan:</b>
+                    <a class="text-decoration-none" href="{% url 'treatment_plan_detail' a.treatment_plan.pk %}">
+                      {{ a.treatment_plan }}
+                    </a>
+                  </div>
+                  {% endif %}
+                </div>
+
+                <hr>
+                <div class="d-flex align-items-center gap-2">
+                  <b class="me-2">Status:</b>
+                  {% if a.status == 'scheduled' %}
+                    <span class="badge text-bg-secondary">Scheduled</span>
+                  {% elif a.status == 'completed' %}
+                    <span class="badge text-bg-success">Completed</span>
+                  {% elif a.status == 'cancelled' %}
+                    <span class="badge text-bg-danger">Cancelled</span>
+                  {% elif a.status == 'rescheduled' %}
+                    <span class="badge text-bg-warning">Rescheduled</span>
+                  {% else %}
+                    <span class="badge text-bg-light text-muted">{{ a.get_status_display }}</span>
+                  {% endif %}
+                </div>
+
+                <form method="post" action="{% url 'appointment_update_status' pk=a.pk %}" class="mt-3 d-flex gap-2" onsubmit="return handleStatusFormSubmit(this, '{{ a.pk }}')">
+                  {% csrf_token %}
+                  <select name="status" class="form-select form-select-sm" style="max-width:220px" onchange="handleStatusChange(this, '{{ a.pk }}')">
+                    {% for v,label in status_choices %}
+                      <option value="{{ v }}" {% if a.status == v %}selected{% endif %}>{{ label }}</option>
+                    {% endfor %}
+                  </select>
+                  <button class="btn btn-sm btn-outline-primary">
+                    <i class="fa fa-save me-2"></i>Update
+                  </button>
+                </form>
+
+                {% if logs and logs.0 %}
+                  <div class="small text-muted mt-3">
+                    <b>Last updated:</b> {{ logs.0.at|date:"d-M-Y h:i A" }}
+                    {% if logs.0.by %} by {{ logs.0.by.get_full_name|default:logs.0.by.username }}{% endif %}
+                    ({{ logs.0.get_action_display }})
+                  </div>
+                {% endif %}
+              </div>
+            </div>
+
+            <!-- Notes -->
+            <div class="col-lg-6">
+              <div class="card p-3 h-100">
+                <h6 class="text-muted mb-3">Notes</h6>
+                <div class="border rounded p-3 text-muted bg-light" style="min-height:120px;">
+                  {{ a.notes|linebreaksbr|default:"<span class='text-muted'>No notes.</span>"|safe }}
+                </div>
+                <hr>
+                <div class="small text-muted">
+                  <div><b>Created:</b> {{ a.created_at|date:"d-M-Y h:i A" }}</div>
+                  {% if a.created_by %}
+                    <div><b>By:</b> {{ a.created_by.get_full_name|default:a.created_by.username }}</div>
+                  {% endif %}
+                </div>
+              </div>
+            </div>
+
+            <!-- History -->
+            <div class="col-12">
+              <div class="card p-3 h-100 mt-3">
+                <h6 class="text-muted mb-3">History</h6>
+
+                {% if logs %}
+                  <ul class="list-unstyled mb-0">
+                    {% for log in logs %}
+                      <li class="py-2 border-bottom">
+                        <div class="d-flex align-items-center justify-content-between">
+                          <div>
+                            <span class="badge 
+                              {% if log.action == 'create' %}text-bg-primary
+                              {% elif log.action == 'reschedule' %}text-bg-warning
+                              {% elif log.action == 'complete' %}text-bg-success
+                              {% elif log.action == 'cancel' %}text-bg-danger
+                              {% else %}text-bg-secondary{% endif %}">
+                              <i class="fa 
+                                {% if log.action == 'create' %}fa-plus-circle
+                                {% elif log.action == 'reschedule' %}fa-refresh
+                                {% elif log.action == 'complete' %}fa-check
+                                {% elif log.action == 'cancel' %}fa-ban
+                                {% else %}fa-info-circle{% endif %} me-1"></i>
+                              {{ log.get_action_display }}
+                            </span>
+
+                            {% if log.by %}
+                              <span class="ms-2 small text-muted">
+                                by {{ log.by.get_full_name|default:log.by.username }}
+                              </span>
+                            {% endif %}
+                          </div>
+                          <div class="small text-muted">
+                            {{ log.at|date:"d-M-Y h:i A" }}
+                          </div>
+                        </div>
+
+                        {% comment %}Show When: for reschedule actions with datetime info{% endcomment %}
+                        {% if log.action == 'reschedule' and log.from_datetime and log.to_datetime %}
+                          <div class="small mt-1">
+                            <b>When:</b>
+                            {{ log.from_datetime|date:"d-M-Y h:i A" }} &rarr; {{ log.to_datetime|date:"d-M-Y h:i A" }}
+                          </div>
+                        {% endif %}
+
+                        {% if log.from_status or log.to_status %}
+                          <div class="small">
+                            <b>Status:</b>
+                            {{ log.from_status|default:"—" }} &rarr; {{ log.to_status|default:"—" }}
+                          </div>
+                        {% endif %}
+
+                        {% if log.note %}
+                          <div class="small text-muted">
+                            {{ log.note }}
+                          </div>
+                        {% endif %}
+                      </li>
+                    {% endfor %}
+                  </ul>
+                {% else %}
+                  <div class="text-muted">No activity yet.</div>
+                {% endif %}
+              </div>
+            </div>
+
+          </div> <!-- row -->
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<script>
+// Store the reschedule URL in a JavaScript variable
+const rescheduleUrl = "{% url 'appointment_reschedule' pk=a.pk %}";
+
+function handleStatusChange(sel, pk) {
+  console.log('Status changed to:', sel.value, 'for appointment:', pk); // Debug log
+  
+  if (sel.value === 'rescheduled') {
+    console.log('Redirecting to:', rescheduleUrl); // Debug log
+    window.location.href = rescheduleUrl;
+  }
+}
+
+function handleStatusFormSubmit(form, pk) {
+  var sel = form.querySelector('select[name="status"]');
+  if (sel && sel.value === 'rescheduled') {
+    console.log('Form submit redirecting to:', rescheduleUrl); // Debug log
+    window.location.href = rescheduleUrl;
+    return false; // Prevent form submit
+  }
+  return true; // Allow normal submit
+}
+</script>
+
+<style>
+  @media print {
+    .btn, .d-print-none { display:none!important }
+    .card { border:none!important; box-shadow:none!important }
+    .table th, .table td { padding:.35rem .5rem!important }
+  }
+</style>
+{% endblock %}

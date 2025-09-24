@@ -1,0 +1,163 @@
+{% extends 'base.html' %}
+{% block content %}
+
+<div class="container-fluid default-dashboard">
+  <div class="row">
+
+    <!-- Header -->
+    <div class="col-12 project-list">
+      <div class="card">
+        <div class="row align-items-center">
+          <div class="col-6 p-0">
+            <ul class="nav nav-tabs border-tab d-flex" role="tablist">
+              <li class="nav-item">
+                <a class="nav-link active" href="#" role="tab" aria-selected="true">
+                  <i class="fa fa-user-plus me-2"></i>
+                  {% if form.instance.pk %}Edit Lead{% else %}New Lead{% endif %}
+                </a>
+              </li>
+            </ul>
+          </div>
+          <div class="col-6 p-0 d-flex justify-content-end align-items-center gap-2">
+            <a class="btn btn-outline-secondary" href="{% url 'lead_list' %}">
+              <i class="fa fa-arrow-left me-2"></i>Back to Leads
+            </a>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Form -->
+    <div class="col-md-12">
+      <form method="post" novalidate class="d-print-none">
+        {% csrf_token %}
+
+        <div class="card shadow-sm">
+          <div class="card-body">
+            {% if form.non_field_errors %}
+              <div class="alert alert-danger mb-3">{{ form.non_field_errors }}</div>
+            {% endif %}
+
+            <h6 class="text-muted mb-3"><i class="fa fa-id-card me-1"></i>Contact</h6>
+            <div class="row g-3">
+              <div class="col-12 col-lg-4">
+                <label class="form-label" for="{{ form.name.id_for_label }}">
+                  <i class="fa fa-user me-1"></i>Name{% if form.fields.name.required %} <span class="text-danger">*</span>{% endif %}
+                </label>
+                {{ form.name }}
+                {% for e in form.name.errors %}<div class="invalid-feedback d-block">{{ e }}</div>{% endfor %}
+              </div>
+
+              <div class="col-12 col-lg-4">
+                <label class="form-label" for="{{ form.phone_number.id_for_label }}">
+                  <i class="fa fa-phone me-1"></i>Phone
+                </label>
+                {{ form.phone_number }}
+                {% for e in form.phone_number.errors %}<div class="invalid-feedback d-block">{{ e }}</div>{% endfor %}
+              </div>
+
+              <div class="col-12 col-lg-4">
+                <label class="form-label" for="{{ form.email.id_for_label }}">
+                  <i class="fa fa-envelope me-1"></i>Email
+                </label>
+                {{ form.email }}
+                {% for e in form.email.errors %}<div class="invalid-feedback d-block">{{ e }}</div>{% endfor %}
+              </div>
+
+              <div class="col-12 col-lg-3">
+                <label class="form-label" for="{{ form.age.id_for_label }}">
+                  <i class="fa fa-child me-1"></i>Age
+                </label>
+                {{ form.age }}
+                {% for e in form.age.errors %}<div class="invalid-feedback d-block">{{ e }}</div>{% endfor %}
+              </div>
+
+              <div class="col-12 col-lg-9">
+                <label class="form-label" for="{{ form.location.id_for_label }}">
+                  <i class="fa fa-map-marker me-1"></i>Location
+                </label>
+                {{ form.location }}
+                {% for e in form.location.errors %}<div class="invalid-feedback d-block">{{ e }}</div>{% endfor %}
+              </div>
+            </div>
+
+            <hr class="my-4">
+
+            <h6 class="text-muted mb-3"><i class="fa fa-tags me-1"></i>Meta</h6>
+            <div class="row g-3">
+              <div class="col-12 col-lg-4">
+                <label class="form-label" for="{{ form.lead_source.id_for_label }}">
+                  <i class="fa fa-search me-1"></i>Lead Source
+                </label>
+                {{ form.lead_source }}
+                {% for e in form.lead_source.errors %}<div class="invalid-feedback d-block">{{ e }}</div>{% endfor %}
+              </div>
+
+              <div class="col-12 col-lg-4">
+                <label class="form-label" for="{{ form.priority.id_for_label }}">
+                  <i class="fa fa-info-circle me-1"></i>Priority
+                </label>
+                {{ form.priority }}
+                {% for e in form.priority.errors %}<div class="invalid-feedback d-block">{{ e }}</div>{% endfor %}
+              </div>
+
+              <div class="col-12 col-lg-4">
+                <label class="form-label" for="{{ form.last_contact_date.id_for_label }}">
+                  <i class="fa fa-clock-o me-1"></i>Last Contact (Date)
+                </label>
+                {{ form.last_contact_date }}
+                {% for e in form.last_contact_date.errors %}<div class="invalid-feedback d-block">{{ e }}</div>{% endfor %}
+              </div>
+
+              <div class="col-12 col-lg-4">
+                <label class="form-label" for="{{ form.next_followup_date.id_for_label }}">
+                  <i class="fa fa-bell-o me-1"></i>Next Follow-up (Date)
+                </label>
+                {{ form.next_followup_date }}
+                {% for e in form.next_followup_date.errors %}<div class="invalid-feedback d-block">{{ e }}</div>{% endfor %}
+              </div>
+            </div>
+
+            <hr class="my-4">
+
+            <h6 class="text-muted mb-3"><i class="fa fa-sticky-note me-1"></i>Notes</h6>
+            <div class="row g-3">
+              <div class="col-12">
+                {{ form.notes }}
+                {% for e in form.notes.errors %}<div class="invalid-feedback d-block">{{ e }}</div>{% endfor %}
+              </div>
+            </div>
+
+          </div>
+
+          <div class="card-footer d-flex justify-content-end gap-2">
+            <a class="btn btn-light" href="{% url 'lead_list' %}">
+              <i class="fa fa-ban me-1"></i>Cancel
+            </a>
+            <button class="btn btn-primary">
+              <i class="fa fa-save me-1"></i>Save
+            </button>
+          </div>
+        </div>
+      </form>
+    </div>
+
+  </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function(){
+  // Ensure Bootstrap classes exist even if widgets were customized
+  document.querySelectorAll('input[type=text],input[type=email],input[type=number],textarea')
+    .forEach(el => el.classList.add('form-control'));
+  document.querySelectorAll('select').forEach(el => el.classList.add('form-select'));
+  document.querySelectorAll('input[type=date]').forEach(el => el.classList.add('form-control'));
+
+  // Mark invalid fields
+  document.querySelectorAll('.invalid-feedback.d-block').forEach(err => {
+    const field = err.previousElementSibling;
+    if (field) field.classList.add('is-invalid');
+  });
+});
+</script>
+{% endblock %}

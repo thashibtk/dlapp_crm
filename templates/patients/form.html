@@ -1,0 +1,164 @@
+{% extends 'base.html' %}
+{% block content %}
+
+<div class="container-fluid default-dashboard"> 
+  <div class="row">
+    <!-- Header -->
+    <div class="col-12 project-list">
+        <div class="card">
+            <div class="row">
+                <div class="col-6 p-0">
+                    <ul class="nav nav-tabs border-tab d-flex" id="top-tab" role="tablist">
+                        <li class="nav-item">
+                            <a class="nav-link active" id="top-all-collections-tab" href="#" role="tab" aria-selected="true">
+                                {% if is_edit %}
+                                <i class="fa fa-pencil-square-o me-2"></i>Edit Patient
+                                {% else %}
+                                <i class="fa fa-user-plus me-2"></i>New Patient
+                                {% endif %}
+                            </a>
+                        </li>
+                        {% if patient %}
+                        <li class="nav-item">
+                            <span class="text-muted small">
+                                <i class="fa fa-folder-open-o me-1"></i>{{ patient.file_number }}
+                            </span>
+                        </li>
+                        {% endif %}
+                    </ul>
+                </div>
+                <div class="col-6 p-0">
+                    <div class="form-group mb-0 me-0"></div>
+                    <a class="btn btn-outline-secondary" style="float:right;" href="{% url 'patient_list' %}">
+                        <i class="fa fa-arrow-left me-2"></i>Back to List
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <form method="post" novalidate class="d-print-none">
+      {% csrf_token %}
+      {% if form.non_field_errors %}
+        <div class="alert alert-danger"><i class="fa fa-exclamation-triangle me-2"></i>{{ form.non_field_errors }}</div>
+      {% endif %}
+
+      <div class="card shadow-sm">
+        <div class="card-body">
+          <h6 class="text-muted mb-3"><i class="fa fa-id-card-o me-2"></i>Patient Details</h6>
+          <div class="row g-3">
+            <div class="col-md-6">
+              <label class="form-label" for="{{ form.name.id_for_label }}"><i class="fa fa-user me-1"></i>Name</label>
+              {{ form.name }}{% if form.name.errors %}<div class="invalid-feedback d-block"><i class="fa fa-warning me-1"></i>{{ form.name.errors|join:", " }}</div>{% endif %}
+            </div>
+            <div class="col-md-3">
+              <label class="form-label" for="{{ form.age.id_for_label }}"><i class="fa fa-hourglass-half me-1"></i>Age</label>
+              {{ form.age }}{% if form.age.errors %}<div class="invalid-feedback d-block"><i class="fa fa-warning me-1"></i>{{ form.age.errors|join:", " }}</div>{% endif %}
+            </div>
+            <div class="col-md-3">
+              <label class="form-label" for="{{ form.date_of_birth.id_for_label }}"><i class="fa fa-birthday-cake me-1"></i>Date of Birth</label>
+              {{ form.date_of_birth }}{% if form.date_of_birth.errors %}<div class="invalid-feedback d-block"><i class="fa fa-warning me-1"></i>{{ form.date_of_birth.errors|join:", " }}</div>{% endif %}
+            </div>
+            <div class="col-md-3">
+              <label class="form-label" for="{{ form.gender.id_for_label }}"><i class="fa fa-venus-mars me-1"></i>Gender</label>
+              {{ form.gender }}{% if form.gender.errors %}<div class="invalid-feedback d-block"><i class="fa fa-warning me-1"></i>{{ form.gender.errors|join:", " }}</div>{% endif %}
+            </div>
+          </div>
+
+          <hr class="my-4">
+
+          <h6 class="text-muted mb-3"><i class="fa fa-address-book-o me-2"></i>Contact</h6>
+          <div class="row g-3">
+            <div class="col-md-4">
+              <label class="form-label" for="{{ form.phone_number.id_for_label }}"><i class="fa fa-phone me-1"></i>Phone</label>
+              {{ form.phone_number }}{% if form.phone_number.errors %}<div class="invalid-feedback d-block"><i class="fa fa-warning me-1"></i>{{ form.phone_number.errors|join:", " }}</div>{% endif %}
+            </div>
+            <div class="col-md-4">
+              <label class="form-label" for="{{ form.email.id_for_label }}"><i class="fa fa-envelope-o me-1"></i>Email</label>
+              {{ form.email }}{% if form.email.errors %}<div class="invalid-feedback d-block"><i class="fa fa-warning me-1"></i>{{ form.email.errors|join:", " }}</div>{% endif %}
+            </div>
+            <div class="col-12">
+              <label class="form-label" for="{{ form.address.id_for_label }}"><i class="fa fa-home me-1"></i>Address</label>
+              {{ form.address }}{% if form.address.errors %}<div class="invalid-feedback d-block"><i class="fa fa-warning me-1"></i>{{ form.address.errors|join:", " }}</div>{% endif %}
+            </div>
+            <div class="col-md-4">
+              <label class="form-label" for="{{ form.city.id_for_label }}"><i class="fa fa-building-o me-1"></i>City</label>
+              {{ form.city }}{% if form.city.errors %}<div class="invalid-feedback d-block"><i class="fa fa-warning me-1"></i>{{ form.city.errors|join:", " }}</div>{% endif %}
+            </div>
+            <div class="col-md-4">
+              <label class="form-label" for="{{ form.district.id_for_label }}"><i class="fa fa-map me-1"></i>District</label>
+              {{ form.district }}{% if form.district.errors %}<div class="invalid-feedback d-block"><i class="fa fa-warning me-1"></i>{{ form.district.errors|join:", " }}</div>{% endif %}
+            </div>
+            <div class="col-md-4">
+              <label class="form-label" for="{{ form.pincode.id_for_label }}"><i class="fa fa-hashtag me-1"></i>Pincode</label>
+              {{ form.pincode }}{% if form.pincode.errors %}<div class="invalid-feedback d-block"><i class="fa fa-warning me-1"></i>{{ form.pincode.errors|join:", " }}</div>{% endif %}
+            </div>
+          </div>
+
+          <hr class="my-4">
+
+          <h6 class="text-muted mb-3"><i class="fa fa-ellipsis-h me-2"></i>Other</h6>
+          <div class="row g-3">
+            <div class="col-md-4">
+              <label class="form-label" for="{{ form.occupation.id_for_label }}"><i class="fa fa-briefcase me-1"></i>Occupation</label>
+              {{ form.occupation }}{% if form.occupation.errors %}<div class="invalid-feedback d-block"><i class="fa fa-warning me-1"></i>{{ form.occupation.errors|join:", " }}</div>{% endif %}
+            </div>
+            <div class="col-md-4">
+              <label class="form-label" for="{{ form.referred_by.id_for_label }}"><i class="fa fa-user-plus me-1"></i>Referred By</label>
+              {{ form.referred_by }}{% if form.referred_by.errors %}<div class="invalid-feedback d-block"><i class="fa fa-warning me-1"></i>{{ form.referred_by.errors|join:", " }}</div>{% endif %}
+            </div>
+            <div class="col-md-4">
+              <label class="form-label" for="{{ form.referral_source.id_for_label }}"><i class="fa fa-bullhorn me-1"></i>Referral Source</label>
+              {{ form.referral_source }}{% if form.referral_source.errors %}<div class="invalid-feedback d-block"><i class="fa fa-warning me-1"></i>{{ form.referral_source.errors|join:", " }}</div>{% endif %}
+            </div>
+          </div>
+        </div>
+
+        <div class="card-footer d-flex justify-content-end gap-2">
+          {% if is_edit %}
+            <a href="{% url 'patient_detail' pk=patient.pk %}" class="btn btn-light"><i class="fa fa-times me-2"></i>Cancel</a>
+          {% else %}
+            <a href="{% url 'patient_list' %}" class="btn btn-light"><i class="fa fa-times me-2"></i>Cancel</a>
+          {% endif %}
+          <button class="btn btn-primary"><i class="fa fa-save me-2"></i>Save</button>
+        </div>
+      </div>
+    </form>
+
+  </div>
+</div> 
+
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
+<script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+  // Ensure Bootstrap classes present on Django-rendered widgets
+  document.querySelectorAll('select').forEach(s => s.classList.add('form-select'));
+  document.querySelectorAll('input:not([type=checkbox]):not([type=radio]):not([type=submit]), textarea')
+    .forEach(i => i.classList.add('form-control'));
+
+  flatpickr('.datepicker', {
+    dateFormat: 'Y-m-d',        // Django expects YYYY-MM-DD
+    altInput: true,             // Show pretty input
+    altFormat: 'd-m-Y',         // Display DD-MM-YYYY
+    allowInput: true,           // Allow manual typing
+    maxDate: 'today',           // No future DOB
+    parseDate: function(datestr) {
+      if (!datestr) return null;
+      datestr = datestr.trim();
+
+      if (/^\d{1,2}-\d{1,2}-\d{4}$/.test(datestr)) {
+        const [d,m,y] = datestr.split('-').map(Number);
+        if (d>=1 && d<=31 && m>=1 && m<=12 && y>=1900) return new Date(y, m-1, d);
+      }
+      if (/^\d{4}-\d{1,2}-\d{1,2}$/.test(datestr)) {
+        const [y,m,d] = datestr.split('-').map(Number);
+        return new Date(y, m-1, d);
+      }
+      const t = new Date(datestr);
+      return isNaN(t.getTime()) ? null : t;
+    }
+  });
+});
+</script>
+{% endblock %}

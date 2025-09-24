@@ -1,0 +1,252 @@
+{% extends 'base.html' %}
+{% block content %}
+
+<div class="container-fluid default-dashboard">
+  <div class="row">
+
+    <!-- Header -->
+    <div class="col-12 project-list">
+      <div class="card">
+        <div class="row">
+          <div class="col-6 p-0">
+            <ul class="nav nav-tabs border-tab d-flex" role="tablist">
+              <li class="nav-item">
+                <a class="nav-link active" href="#" role="tab" aria-selected="true">
+                  <i class="fa fa-refresh me-2"></i>Reschedule Appointment
+                </a>
+              </li>
+            </ul>
+          </div>
+          <div class="col-6 p-0 d-flex justify-content-end align-items-center">
+            <a class="btn btn-outline-secondary" href="{% url 'appointment_detail' appt.pk %}">
+              <i class="fa fa-arrow-left me-2"></i>Back to Details
+            </a>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Form -->
+    <form method="post" novalidate class="d-print-none" id="rescheduleForm">
+      {% csrf_token %}
+      {% if form.non_field_errors %}
+        <div class="alert alert-danger">
+          <i class="fa fa-exclamation-triangle me-2"></i>{{ form.non_field_errors }}
+        </div>
+      {% endif %}
+
+      <div class="card shadow-sm">
+        <div class="card-body">
+          <h6 class="text-muted mb-3"><i class="fa fa-info-circle me-2"></i>Details</h6>
+
+          <!-- Debug info -->
+          <div class="alert alert-info">
+            <small>Current appointment: {{ appt.appointment_date|date:"d-M-Y h:i A" }}</small>
+          </div>
+
+          <div class="row g-3">
+            <!-- Patient (read-only) -->
+            <div class="col-md-6">
+              <label class="form-label"><i class="fa fa-user me-1"></i>Patient</label>
+              <div class="form-control" style="background:#f8f9fa">
+                {{ appt.patient.name }}
+                {% if appt.patient.file_number %} — File: {{ appt.patient.file_number }}{% endif %}
+              </div>
+            </div>
+
+            <!-- Doctor (optional change) -->
+            {% if form.assigned_doctor %}
+            <div class="col-md-3">
+              <label class="form-label" for="{{ form.assigned_doctor.id_for_label }}">
+                <i class="fa fa-user-md me-1"></i>Doctor
+              </label>
+              {{ form.assigned_doctor }}
+              {% if form.assigned_doctor.errors %}
+                <div class="invalid-feedback d-block">
+                  <i class="fa fa-warning me-1"></i>{{ form.assigned_doctor.errors|join:", " }}
+                </div>
+              {% endif %}
+            </div>
+            {% endif %}
+
+            <!-- New date & time -->
+            <div class="col-md-3">
+              <label class="form-label" for="{{ form.appointment_date.id_for_label }}">
+                <i class="fa fa-calendar me-1"></i>New date & time
+              </label>
+              {{ form.appointment_date }}
+              <div class="form-text">
+                <i class="fa fa-info-circle me-1"></i>{{ form.fields.appointment_date.help_text|default:"Select the appointment date & time" }}
+              </div>
+              {% if form.appointment_date.errors %}
+                <div class="invalid-feedback d-block">
+                  <i class="fa fa-warning me-1"></i>{{ form.appointment_date.errors|join:", " }}
+                </div>
+              {% endif %}
+            </div>
+
+            <!-- Reason -->
+            {% if form.reschedule_reason %}
+            <div class="col-12">
+              <label class="form-label" for="{{ form.reschedule_reason.id_for_label }}">
+                <i class="fa fa-sticky-note-o me-1"></i>Reason (optional)
+              </label>
+              {{ form.reschedule_reason }}
+              {% if form.reschedule_reason.errors %}
+                <div class="invalid-feedback d-block">
+                  <i class="fa fa-warning me-1"></i>{{ form.reschedule_reason.errors|join:", " }}
+                </div>
+              {% endif %}
+            </div>
+            {% endif %}
+
+            <!-- Notes -->
+            {% if form.notes %}
+            <div class="col-12">
+              <label class="form-label" for="{{ form.notes.id_for_label }}">
+                <i class="fa fa-sticky-note-o me-1"></i>Notes
+              </label>
+              {{ form.notes }}
+              {% if form.notes.errors %}
+                <div class="invalid-feedback d-block">
+                  <i class="fa fa-warning me-1"></i>{{ form.notes.errors|join:", " }}
+                </div>
+              {% endif %}
+            </div>
+            {% endif %}
+          </div>
+        </div>
+
+        <div class="card-footer d-flex justify-content-end gap-2">
+          <a class="btn btn-light" href="{% url 'appointment_detail' appt.pk %}">
+            <i class="fa fa-times me-2"></i>Cancel
+          </a>
+          <button class="btn btn-primary" type="submit">
+            <i class="fa fa-save me-2"></i>Save
+          </button>
+        </div>
+      </div>
+    </form>
+
+  </div>
+</div>
+
+<style>
+  @media print { .nav, .btn, .d-print-none { display:none!important } .card{ border:none!important; box-shadow:none!important } }
+</style>
+
+<!-- Flatpickr (12-hour display) -->
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
+<script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+  // Bootstrap classes safeguard
+  document.querySelectorAll('select').forEach(s => s.classList.add('form-select'));
+  document.querySelectorAll('input:not([type=checkbox]):not([type=radio]):not([type=submit]), textarea')
+    .forEach(i => i.classList.add('form-control'));
+
+  const pad = n => String(n).padStart(2,'0');
+  const roundUp = (d, step=5) => {
+    const ms = 1000*60*step;
+    return new Date(Math.ceil(d.getTime()/ms)*ms);
+  };
+
+  const el = document.querySelector('[name="appointment_date"]');
+  if (el && typeof flatpickr !== 'undefined') {
+    const isDT = el.getAttribute('type') === 'datetime-local';
+    const minAttr = el.getAttribute('min');
+    let minDateOpt = 'today';
+    if (minAttr) {
+      const parsed = new Date(minAttr);
+      if (!isNaN(parsed)) minDateOpt = parsed;
+    }
+    const now = new Date();
+    const nextSlot = roundUp(now, 5);
+    const defaultDate = (el.value && !isNaN(new Date(el.value))) ? new Date(el.value) : (isDT ? nextSlot : null);
+
+    const base = { altInput:true, allowInput:true, disableMobile:true, static:true, defaultDate: defaultDate };
+
+    const opts = isDT ? {
+      enableTime:true,
+      time_24hr:false,                 // 12-hour with AM/PM
+      minuteIncrement:5,
+      dateFormat:'Y-m-d\\TH:i',        // native input stays valid
+      altFormat:'D, d M Y · h:i K',    // 12h + AM/PM
+      minDate:minDateOpt,
+      onReady:function(sd, ds, inst){
+        const setMinTime = () => {
+          const today = new Date(); today.setHours(0,0,0,0);
+          const sel = (inst.selectedDates[0]) ? new Date(inst.selectedDates[0]) : new Date();
+          const selDay = new Date(sel); selDay.setHours(0,0,0,0);
+          if (selDay.getTime() === today.getTime()) {
+            const next = roundUp(new Date(), 5);
+            inst.set('minTime', `${pad(next.getHours())}:${pad(next.getMinutes())}`);
+          } else {
+            inst.set('minTime', null);
+          }
+        };
+        setMinTime();
+        inst._setMinTime = setMinTime;
+      },
+      onChange:function(selectedDates, dateStr, instance){
+        // Sync to original input immediately
+        if (selectedDates[0]) {
+          const isoStr = selectedDates[0].getFullYear() + '-' + 
+                        pad(selectedDates[0].getMonth() + 1) + '-' + 
+                        pad(selectedDates[0].getDate()) + 'T' + 
+                        pad(selectedDates[0].getHours()) + ':' + 
+                        pad(selectedDates[0].getMinutes());
+          el.value = isoStr;
+          console.log('Updated datetime input to:', isoStr);
+        }
+        this._setMinTime && this._setMinTime();
+      },
+      onOpen:function(){ this._setMinTime && this._setMinTime(); }
+    } : {
+      dateFormat:'Y-m-d',
+      altFormat:'D, d M Y',
+      onChange:function(selectedDates, dateStr, instance){
+        if (selectedDates[0]) {
+          const isoStr = selectedDates[0].getFullYear() + '-' + 
+                        pad(selectedDates[0].getMonth() + 1) + '-' + 
+                        pad(selectedDates[0].getDate());
+          el.value = isoStr;
+          console.log('Updated date input to:', isoStr);
+        }
+      }
+    };
+
+    const fp = flatpickr(el, Object.assign({}, base, opts));
+
+    // Additional form submit handler to ensure sync
+    const form = document.getElementById('rescheduleForm');
+    if (form) {
+      form.addEventListener('submit', function(e) {
+        const alt = fp.altInput;
+        if (alt && alt.value && alt.value.trim()) {
+          const parsed = fp.parseDate(alt.value, fp.config.altFormat);
+          if (parsed) {
+            fp.setDate(parsed, false); // Don't trigger onChange
+            // Manually set the original input value
+            if (isDT) {
+              const isoStr = parsed.getFullYear() + '-' + 
+                            pad(parsed.getMonth() + 1) + '-' + 
+                            pad(parsed.getDate()) + 'T' + 
+                            pad(parsed.getHours()) + ':' + 
+                            pad(parsed.getMinutes());
+              el.value = isoStr;
+            } else {
+              const isoStr = parsed.getFullYear() + '-' + 
+                            pad(parsed.getMonth() + 1) + '-' + 
+                            pad(parsed.getDate());
+              el.value = isoStr;
+            }
+            console.log('Form submit - final datetime value:', el.value);
+          }
+        }
+      }, { capture: true });
+    }
+  }
+});
+</script>
+{% endblock %}

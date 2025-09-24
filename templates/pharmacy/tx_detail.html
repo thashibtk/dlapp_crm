@@ -1,0 +1,90 @@
+{% extends 'base.html' %}
+{% block content %}
+
+<div class="container-fluid default-dashboard">
+  <div class="row">
+    <div class="col-md-12 project-list d-print-none">
+      <div class="card">
+        <div class="row align-items-center">
+          <div class="col-md-6 p-0">
+            <ul class="nav nav-tabs border-tab d-flex" role="tablist">
+              <li class="nav-item">
+                <a class="nav-link active" href="#" role="tab" aria-selected="true">
+                  <i class="fa fa-cubes me-2"></i>Pharmacy • Stock Transaction
+                </a>
+              </li>
+            </ul>
+          </div>
+          <div class="col-md-6 p-0 d-flex justify-content-end align-items-center gap-2">
+            <a class="btn btn-outline-secondary" href="{% url 'pharmacy_tx_list' %}">
+              <i class="fa fa-arrow-left me-2"></i>Back to Transactions
+            </a>
+
+            {% if tx.transaction_type != 'sale' and tx.transaction_type != 'adjustment'%}
+            <a class="btn btn-primary" href="{% url 'pharmacy_tx_edit' tx.pk %}">
+              <i class="fa fa-pencil me-2"></i>Edit
+            </a>
+            
+            {% endif %}
+            <button class="btn btn-success" type="button" onclick="window.print()">
+              <i class="fa fa-print me-2"></i>Print
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="col-12">
+      <div class="card p-4">
+        <div class="d-flex flex-column flex-sm-row justify-content-between">
+          <div>
+            <h5 class="mb-0">DLapp Clinic</h5>
+            <div class="text-muted">Stock Transaction</div>
+          </div>
+          <div class="text-sm-end">
+            <div><b>Date:</b> {{ tx.created_at|date:"Y-m-d H:i" }}</div>
+            <div><b>By:</b> {{ tx.created_by|default:"—" }}</div>
+          </div>
+        </div>
+
+        <hr>
+
+        <div class="row g-3">
+          <div class="col-md-6">
+            <table class="table table-sm">
+              <tbody>
+                <tr><th class="w-50">Medicine</th><td>{{ tx.medicine.name }}</td></tr>
+                <tr><th>Type</th><td>{{ tx.get_transaction_type_display }}</td></tr>
+                <tr><th>Quantity</th><td>{{ tx.quantity }}</td></tr>
+                <tr><th>Unit Price</th><td>₹ {{ tx.unit_price }}</td></tr>
+              </tbody>
+            </table>
+          </div>
+          <div class="col-md-6">
+            <table class="table table-sm">
+              <tbody>
+                <tr><th class="w-50">Batch</th><td>{{ tx.batch_number|default:"—" }}</td></tr>
+                <tr><th>Expiry</th><td>{{ tx.expiry_date|date:"Y-m-d"|default:"—" }}</td></tr>
+                <tr><th>Supplier</th><td>{{ tx.supplier|default:"—" }}</td></tr>
+                <tr><th>Reference #</th><td>{{ tx.reference_number|default:"—" }}</td></tr>
+                <tr><th>Patient</th><td>{{ tx.patient.name|default:"—" }}</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        {% if tx.notes %}
+        <div class="mt-3">
+          <div class="small text-muted mb-1"><i class="fa fa-sticky-note me-1"></i>Notes</div>
+          <div style="white-space:pre-wrap">{{ tx.notes }}</div>
+        </div>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+</div>
+
+<style>
+  @media print { .d-print-none { display: none !important; } .card{ box-shadow:none; border:none; } }
+</style>
+{% endblock %}

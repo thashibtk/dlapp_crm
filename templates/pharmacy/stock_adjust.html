@@ -1,0 +1,90 @@
+{# templates/pharmacy/stock_adjust.html #}
+{% extends 'base.html' %}
+{% block content %}
+
+<div class="container-fluid default-dashboard">
+  <div class="row">
+
+    <div class="col-12 project-list d-print-none">
+      <div class="card">
+          <div class="row align-items-center">
+              <div class="col-6 p-0">
+                  <ul class="nav nav-tabs border-tab d-flex" role="tablist">
+                      <li class="nav-item">
+                          <a class="nav-link active" href="#" role="tab" aria-selected="true">
+                              <i class="fa fa-sliders me-2"></i>Adjust Stock
+                          </a>
+                      </li>
+                      <li class="nav-item">
+                          <span class="text-muted small">
+                              <i class="fa fa-capsules me-1"></i>{{ stock.medicine.name }}
+                          </span>
+                      </li>
+                  </ul>
+              </div>
+              <div class="col-6 p-0 d-flex justify-content-end align-items-center gap-2">
+                  <a class="btn btn-outline-secondary" href="{% url 'pharmacy_stock_list' %}">
+                      <i class="fa fa-arrow-left me-2"></i>Back to Stock
+                  </a>
+              </div>
+          </div>
+      </div>
+    </div>
+
+    <div class="col-md-8 col-lg-6">
+      <form method="post" class="card shadow-sm">
+        {% csrf_token %}
+        <div class="card-body">
+          <div class="mb-3">
+            <div class="small text-muted mb-1">Current available</div>
+            <div class="h5 mb-0">{{ stock.current_quantity }}</div>
+          </div>
+
+          <div class="mb-3">
+            <label class="form-label">New available quantity</label>
+            {{ form.target_quantity }}
+            {% if form.target_quantity.errors %}<div class="invalid-feedback d-block">{{ form.target_quantity.errors|join:", " }}</div>{% endif %}
+          </div>
+
+          <div class="mb-0">
+            <label class="form-label">Reason (optional)</label>
+            {{ form.note }}
+            {% if form.note.errors %}<div class="invalid-feedback d-block">{{ form.note.errors|join:", " }}</div>{% endif %}
+            <div class="form-text">Creates an adjustment transaction so the audit trail remains intact.</div>
+          </div>
+        </div>
+
+        <div class="card-footer d-flex justify-content-end gap-2">
+          <a class="btn btn-light" href="{% url 'pharmacy_stock_list' %}">
+            <i class="fa fa-ban me-1"></i>Cancel
+          </a>
+          <button class="btn btn-primary">
+            <i class="fa fa-save me-1"></i>Save Adjustment
+          </button>
+        </div>
+      </form>
+    </div>
+
+    <div class="col-md-4 col-lg-6">
+      <div class="card">
+        <div class="card-body">
+          <div class="small text-muted mb-2">Details</div>
+          <div><b>Medicine:</b> {{ stock.medicine.name }}</div>
+          {% if stock.medicine.strength %}<div><b>Strength:</b> {{ stock.medicine.strength }}</div>{% endif %}
+          {% if stock.medicine.category %}<div><b>Category:</b> {{ stock.medicine.category.name }}</div>{% endif %}
+          <div><b>Min level:</b> {{ stock.medicine.minimum_stock_level }}</div>
+          <div class="text-muted mt-2"><b>Last updated:</b> {{ stock.last_updated|date:"Y-m-d H:i" }}</div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function(){
+  document.querySelectorAll('input[type="number"], textarea').forEach(i=>i.classList.add('form-control'));
+});
+</script>
+
+{% endblock %}

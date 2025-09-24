@@ -1,0 +1,167 @@
+{# templates/pharmacy/medicine_form_edit.html #}
+{% extends 'base.html' %}
+{% block content %}
+
+<div class="container-fluid default-dashboard">
+  <div class="row">
+    <!-- Header -->
+    <div class="col-md-12 project-list d-print-none">
+      <div class="card">
+        <div class="row align-items-center">
+          <div class="col-md-6 p-0">
+            <ul class="nav nav-tabs border-tab d-flex" role="tablist">
+              <li class="nav-item">
+                <a class="nav-link active" href="#" role="tab" aria-selected="true">
+                  <i class="fa fa-pen me-2"></i>Pharmacy • Edit Medicine
+                </a>
+              </li>
+              <li class="nav-item">
+                <span class="text-muted small">
+                  <i class="fa fa-tag me-1"></i>{{ medicine.name }}
+                </span>
+              </li>
+            </ul>
+          </div>
+          <div class="col-md-6 p-0 d-flex justify-content-end align-items-center gap-2">
+            <a class="btn btn-outline-secondary" href="{% url 'pharmacy_medicine_detail' medicine.pk %}">
+              <i class="fa fa-arrow-left me-2"></i>Back to Detail
+            </a>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Form -->
+    <div class="col-md-12">
+      <form method="post" novalidate class="d-print-none">
+        {% csrf_token %}
+        {% if form.non_field_errors %}
+          <div class="alert alert-danger">{{ form.non_field_errors }}</div>
+        {% endif %}
+
+        <div class="card shadow-sm">
+          <div class="card-body">
+            <div class="row g-3">
+              <div class="col-md-6">
+                <label class="form-label">Name</label>
+                {{ form.name }}
+                {% if form.name.errors %}<div class="invalid-feedback d-block">{{ form.name.errors|join:", " }}</div>{% endif %}
+              </div>
+
+              <div class="col-md-6">
+                <label class="form-label">Generic Name</label>
+                {{ form.generic_name }}
+                {% if form.generic_name.errors %}<div class="invalid-feedback d-block">{{ form.generic_name.errors|join:", " }}</div>{% endif %}
+              </div>
+
+              <div class="col-md-4">
+                <label class="form-label">Category</label>
+                {{ form.category }}
+                {% if form.category.errors %}<div class="invalid-feedback d-block">{{ form.category.errors|join:", " }}</div>{% endif %}
+              </div>
+
+              <div class="col-md-4">
+                <label class="form-label">Type</label>
+                {{ form.medicine_type }}
+                {% if form.medicine_type.errors %}<div class="invalid-feedback d-block">{{ form.medicine_type.errors|join:", " }}</div>{% endif %}
+              </div>
+
+              <div class="col-md-4">
+                <label class="form-label">Strength</label>
+                {{ form.strength }}
+                {% if form.strength.errors %}<div class="invalid-feedback d-block">{{ form.strength.errors|join:", " }}</div>{% endif %}
+              </div>
+
+              <div class="col-md-6">
+                <label class="form-label">Manufacturer</label>
+                {{ form.manufacturer }}
+                {% if form.manufacturer.errors %}<div class="invalid-feedback d-block">{{ form.manufacturer.errors|join:", " }}</div>{% endif %}
+              </div>
+
+              <div class="col-md-3">
+                <label class="form-label">Purchase Price (₹)</label>
+                {{ form.purchase_price }}
+                {% if form.purchase_price.errors %}<div class="invalid-feedback d-block">{{ form.purchase_price.errors|join:", " }}</div>{% endif %}
+              </div>
+
+              <div class="col-md-3">
+                <label class="form-label">Selling Price (₹)</label>
+                {{ form.selling_price }}
+                {% if form.selling_price.errors %}<div class="invalid-feedback d-block">{{ form.selling_price.errors|join:", " }}</div>{% endif %}
+              </div>
+
+              <div class="col-md-4">
+                <label class="form-label">Minimum Stock Level</label>
+                {{ form.minimum_stock_level }}
+                {% if form.minimum_stock_level.errors %}<div class="invalid-feedback d-block">{{ form.minimum_stock_level.errors|join:", " }}</div>{% endif %}
+              </div>
+
+              <div class="col-md-4">
+                <label class="form-label">Unit of Measurement</label>
+                {{ form.unit_of_measurement }}
+                {% if form.unit_of_measurement.errors %}<div class="invalid-feedback d-block">{{ form.unit_of_measurement.errors|join:", " }}</div>{% endif %}
+              </div>
+
+              <div class="col-md-4 d-flex align-items-center">
+                <div class="form-check mt-4">
+                  {{ form.is_active }}
+                  <label class="form-check-label">Active</label>
+                </div>
+                {% if form.is_active.errors %}<div class="invalid-feedback d-block">{{ form.is_active.errors|join:", " }}</div>{% endif %}
+              </div>
+
+              <div class="col-12">
+                <label class="form-label">Description</label>
+                {{ form.description }}
+                {% if form.description.errors %}<div class="invalid-feedback d-block">{{ form.description.errors|join:", " }}</div>{% endif %}
+              </div>
+
+              <div class="col-12">
+                <label class="form-label">Side Effects</label>
+                {{ form.side_effects }}
+                {% if form.side_effects.errors %}<div class="invalid-feedback d-block">{{ form.side_effects.errors|join:", " }}</div>{% endif %}
+              </div>
+
+              <div class="col-12">
+                <label class="form-label">Contraindications</label>
+                {{ form.contraindications }}
+                {% if form.contraindications.errors %}<div class="invalid-feedback d-block">{{ form.contraindications.errors|join:", " }}</div>{% endif %}
+              </div>
+
+              <div class="col-12">
+                <label class="form-label">Storage Instructions</label>
+                {{ form.storage_instructions }}
+                {% if form.storage_instructions.errors %}<div class="invalid-feedback d-block">{{ form.storage_instructions.errors|join:", " }}</div>{% endif %}
+              </div>
+
+              {% for f in form.hidden_fields %}{{ f }}{% endfor %}
+            </div>
+          </div>
+
+          <div class="card-footer d-flex justify-content-end gap-2">
+            <a class="btn btn-light" href="{% url 'pharmacy_medicine_detail' medicine.pk %}">
+              <i class="fa fa-ban me-1"></i>Cancel
+            </a>
+            <button class="btn btn-primary">
+              <i class="fa fa-save me-1"></i>Save Changes
+            </button>
+          </div>
+        </div>
+      </form>
+    </div>
+
+  </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function(){
+  document.querySelectorAll('input[type="text"],input[type="number"],textarea').forEach(i=>i.classList.add('form-control'));
+  document.querySelectorAll('select').forEach(s=>s.classList.add('form-select'));
+  document.querySelectorAll('input[type="checkbox"]').forEach(c=>c.classList.add('form-check-input'));
+  ['id_purchase_price','id_selling_price'].forEach(id=>{
+    const el=document.getElementById(id); if(el){ el.step=el.step||'0.01'; el.min=el.min||'0'; }
+  });
+});
+</script>
+
+{% endblock %}

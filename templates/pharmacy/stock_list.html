@@ -1,0 +1,251 @@
+{% extends 'base.html' %}
+{% load roles %}
+{% load static %}
+{% block content %}
+<style>
+  /* Adjusting the search filter within the flex container */
+  div.dataTables_wrapper div.dataTables_filter {
+    position: static;
+    top: auto;
+    right: auto;
+    flex: 1 1 auto;
+    min-width: 200px;
+    max-width: 300px;
+    margin-left: auto;
+    text-align: right;
+  }
+  @media (max-width: 767px) {
+    div.dataTables_wrapper div.dataTables_filter {
+      flex: 1 1 100%;
+      min-width: unset;
+      max-width: unset;
+      margin-left: 0;
+      text-align: left;
+      order: -1;
+      padding: 10px 0;
+    }
+  }
+</style>
+<style>
+  /* --- Print Styles - A4 Table List --- */
+  .print-table-container { display: none; }
+
+  @media print {
+    @page { size: A4 portrait; margin: 10mm 8mm 15mm 8mm; }
+
+    body { margin:0!important; padding:0!important; font-family: Arial, Helvetica, sans-serif!important;
+           font-size:10pt!important; line-height:1.2!important; color:#000!important; background:#fff!important; width:100%!important; }
+
+    /* Hide everything by default */
+    body * { visibility: hidden !important; }
+
+    /* Show only the print container and its contents */
+    .print-table-container, .print-table-container * { visibility: visible !important; }
+
+    /* Place the print container at the top-left for clean layout */
+    .print-table-container {
+      display:block !important; position:absolute !important; left:0 !important; top:0 !important; width:100% !important;
+      margin:0 !important; padding:0 !important; background:#fff !important;
+    }
+
+    .print-header { display:flex !important; justify-content:space-between; align-items:flex-start;
+                    margin-bottom:30px; border-bottom:2px solid #333; padding-bottom:10px; }
+    .print-header-left { text-align:left; }
+    .print-header-right { text-align:right; }
+    .print-header img { width:80px; height:auto; }
+    .print-header h1 { font-size:24px; font-weight:bold; color:#2b5f60; margin:0; }
+    .print-header p { margin:5px 0; font-size:12px; color:#555; }
+
+    .print-table { width:100%; border-collapse:collapse; margin-top:20px; }
+
+    * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; color-adjust: exact !important; }
+
+    .print-table th, .print-table td { border:1px solid #ddd; padding:6px; text-align:left; font-size:11px; }
+    .print-table th { background-color:#2b5f60 !important; color:#fff !important; font-weight:bold; }
+    .print-table tbody tr:nth-child(even) { background-color:#f9f9f9 !important; }
+
+    .print-footer { text-align:center; margin-top:50px; font-size:10px; color:#666; }
+  }
+</style>
+
+
+<div class="container-fluid default-dashboard">
+  <div class="row">
+
+    <!-- Header -->
+    <div class="col-12 project-list">
+      <div class="card">
+          <div class="row align-items-center">
+              <div class="col-6 p-0">
+                  <ul class="nav nav-tabs border-tab d-flex" role="tablist">
+                      <li class="nav-item">
+                          <a class="nav-link active" href="#" role="tab" aria-selected="true">
+                              <i class="fa fa-cubes me-2"></i>Pharmacy • Stock
+                          </a>
+                      </li>
+                  </ul>
+              </div>
+
+              <div class="col-6 p-0 d-flex justify-content-end align-items-center gap-2">
+                <button class="btn btn-outline-success d-print-none" type="button" onclick="printStock()">
+                  <i class="fa fa-print me-2"></i>Print
+                </button>
+              </div>
+
+            
+          </div>
+      </div>
+    </div>
+
+
+    <!-- Table -->
+    <div class="col-sm-12">
+      <div class="card">
+        <div class="card-body">
+          <div class="table-responsive custom-scrollbar">
+            <table class="display table table-hover align-middle" id="basic-1">
+              <thead>
+                <tr>
+                  <th><i class="fa fa-medkit me-1"></i>Medicine</th>
+                  <th class="text-end"><i class="fa fa-inbox me-1"></i>Available</th>
+                  <th class="text-end"><i class="fa fa-ambulance me-1"></i>Reserved</th>
+                  <th class="text-end"><i class="fa fa-level-down me-1"></i>Min Level</th>
+                  <th class="text-center"><i class="fa fa-info-circle me-1"></i>Status</th>
+                  <th class="text-nowrap text-end"><i class="fa fa-clock-o me-1"></i>Updated</th>
+                  <th class="text-end d-print-none"><i class="fa fa-cog me-1"></i>Action</th>
+                </tr>
+              </thead>
+              <tbody>
+                {% for s in stocks %}
+                <tr>
+                  <td class="text-nowrap">{{ s.medicine.name }}</td>
+                  <td class="text-end">{{ s.current_quantity }}</td>
+                  <td class="text-end">{{ s.reserved_quantity }}</td>
+                  <td class="text-end">{{ s.medicine.minimum_stock_level }}</td>
+                  <td class="text-center">
+                    {% if s.is_low_stock %}
+                      <span class="badge text-bg-danger"><i class="fa fa-triangle-exclamation me-1"></i>Low</span>
+                    {% else %}
+                      <span class="badge text-bg-success"><i class="fa fa-check me-1"></i>OK</span>
+                    {% endif %}
+                  </td>
+                  <td class="text-end text-muted">{{ s.last_updated|date:"d-M-Y h:i A" }}</td>
+                  <td class="text-end d-print-none">
+                    {% if request.user|in_group:"PharmacyManager" or request.user|in_group:"OperationsManager" %}
+                    <a class="btn btn-sm btn-outline-primary" href="{% url 'pharmacy_stock_adjust' s.medicine.pk %}">
+                      <i class="fa fa-sliders me-1"></i>Adjust
+                    </a>
+                    {% else %}
+                    <span class="text-muted">—</span>
+                    {% endif %}
+                  </td>
+                </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+
+
+  </div>
+</div>
+
+
+<div class="print-table-container" id="printStockWrap">
+  <div class="print-header">
+    <div class="print-header-left">
+      <img src="{% static 'assets/images/logo/dlapp_logo_grncut.png' %}" alt="DLapp">
+    </div>
+    <div class="print-header-right">
+      <h1>D Lapp Hair Regenerative Clinic</h1>
+      <p>Kottayil Arcade, Malaparamba,<br> Kozhikode, Kerala 673009<br>
+         Phone: +91 8593957885 | Email: info@dlapphairclinic.com
+      </p>
+    </div>
+  </div>
+
+  <div style="text-align:center; margin-bottom:20px;">
+    <h2 style="font-size:18px; margin-bottom:5px;">Pharmacy • Stock</h2>
+    <!-- If you later add filters (search/type/status), show their summary here -->
+    <p id="printFilterSummary" style="font-size:12px; color:#555;"></p>
+  </div>
+
+  <table class="print-table" id="printStockTable">
+    <thead>
+      <tr>
+        <th style="width:5%;">#</th>
+        <th style="width:30%;">Medicine</th>
+        <th style="width:12%;" class="text-end">Available</th>
+        <th style="width:12%;" class="text-end">Reserved</th>
+        <th style="width:12%;" class="text-end">Min Level</th>
+        <th style="width:12%;">Status</th>
+        <th style="width:17%;">Updated</th>
+      </tr>
+    </thead>
+    <tbody>
+      <!-- Filled dynamically -->
+    </tbody>
+  </table>
+
+  <div class="print-footer">
+    Generated by {{ request.user.get_full_name|default:request.user.username }} on {% now "F d, Y, h:i A" %}
+  </div>
+</div>
+
+<script>
+function printStock() {
+  // If you're using DataTables, prefer its API to get filtered rows.
+  // Otherwise, we’ll rely on DOM visibility.
+  const srcTable = document.getElementById('basic-1');
+  const bodyRows = Array.from(srcTable.querySelectorAll('tbody tr'));
+
+  const printBody = document.querySelector('#printStockTable tbody');
+  printBody.innerHTML = '';
+
+  let i = 0;
+  bodyRows.forEach(r => {
+    // Treat rows hidden with style/display or via DataTables as not visible.
+    const hiddenByStyle = r.style.display === 'none';
+    // DataTables often toggles a "dtrg-group" or uses classes; if you need more,
+    // add checks here. For now, keep it simple:
+    if (hiddenByStyle) return;
+
+    const tds = r.querySelectorAll('td');
+    if (tds.length < 6) return; // sanity
+
+    const medicine = tds[0]?.innerText.trim() || '';
+    const available = tds[1]?.innerText.trim() || '';
+    const reserved  = tds[2]?.innerText.trim() || '';
+    const minLevel  = tds[3]?.innerText.trim() || '';
+    const status    = tds[4]?.innerText.trim() || '';
+    const updated   = tds[5]?.innerText.trim() || '';
+
+    const tr = document.createElement('tr');
+    tr.innerHTML = `
+      <td>${++i}</td>
+      <td>${medicine}</td>
+      <td class="text-end">${available}</td>
+      <td class="text-end">${reserved}</td>
+      <td class="text-end">${minLevel}</td>
+      <td>${status}</td>
+      <td>${updated}</td>
+    `;
+    printBody.appendChild(tr);
+  });
+
+  if (i === 0) {
+    const tr = document.createElement('tr');
+    tr.innerHTML = `<td colspan="7" style="text-align:center; color:#666;">No rows to print.</td>`;
+    printBody.appendChild(tr);
+  }
+
+  // Optional: if you add on-page filters later, compose a summary here:
+  document.getElementById('printFilterSummary').textContent = '';
+
+  window.print();
+}
+</script>
+
+{% endblock %}

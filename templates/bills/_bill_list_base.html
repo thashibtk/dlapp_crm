@@ -1,0 +1,530 @@
+﻿{% load static %}
+<style>
+  /* Put DT search on the right like your appointments page */
+  div.dataTables_wrapper div.dataTables_filter {
+    position: static; flex: 1 1 auto; min-width: 200px; max-width: 300px;
+    margin-left: auto; text-align: right;
+  }
+  @media (max-width: 767px){
+    div.dataTables_wrapper div.dataTables_filter {
+      flex: 1 1 100%; min-width: unset; max-width: unset; margin-left: 0;
+      text-align: left; order: -1; padding: 10px 0;
+    }
+  }
+
+  .bill-badge { padding:.25rem .5rem; border-radius:.35rem; font-weight:600; font-size:.78rem; }
+  .badge-paid { background:#e7f7ea; color:#1e7e34; border:1px solid #cfe9d4; }
+  .badge-partial { background:#fff6e6; color:#b26a00; border:1px solid #ffe0a3; }
+  .badge-unpaid { background:#fde8e8; color:#a61b1b; border:1px solid #fac5c5; }
+</style>
+<style>
+  /* --- Print Styles - A4 Shared (Appointments & Bills identical) --- */
+  .print-table-container,
+  .bill-print-container { display: none; }
+
+  @media print {
+    @page { size: A4 portrait; margin: 10mm 8mm 15mm 8mm; }
+
+    body {
+      margin: 0 !important; padding: 0 !important;
+      font-family: Arial, Helvetica, sans-serif !important;
+      font-size: 10pt !important; line-height: 1.2 !important;
+      color: #000 !important; background: #fff !important;
+      width: 100% !important;
+    }
+
+    /* Hide everything by default */
+    body * { visibility: hidden !important; }
+
+    /* Show only the print containers (either page) */
+    .print-table-container, .print-table-container *,
+    .bill-print-container, .bill-print-container * {
+      visibility: visible !important;
+    }
+
+    /* Position */
+    .print-table-container,
+    .bill-print-container {
+      display: block !important;
+      position: absolute !important;
+      left: 0 !important; top: 0 !important;
+      width: 100% !important; margin: 0 !important; padding: 0 !important;
+      background: #fff !important;
+    }
+
+    /* Header matches Appointments exactly */
+    .print-header {
+      display: flex !important;
+      justify-content: space-between;
+      align-items: flex-start;
+      margin-bottom: 30px;
+      border-bottom: 2px solid #333;
+      padding-bottom: 10px;
+    }
+    .print-header-left { text-align: left; }
+    .print-header-right { text-align: right; }
+    .print-header img { width: 80px; height: auto; }
+
+    .print-header h1 {
+      font-size: 24px; font-weight: bold;
+      color: #2b5f60; margin: 0;
+    }
+    .print-header p { margin: 5px 0; font-size: 12px; color: #555; }
+
+    .print-table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+
+    * {
+      -webkit-print-color-adjust: exact !important;
+      print-color-adjust: exact !important;
+      color-adjust: exact !important;
+    }
+
+    .print-table th, .print-table td {
+      border: 1px solid #ddd; padding: 6px; text-align: left; font-size: 11px;
+    }
+
+    .print-table th {
+      background-color: #2b5f60 !important;
+      color: #fff !important; font-weight: bold;
+    }
+
+    .print-table tbody tr:nth-child(even) { background-color: #f9f9f9 !important; }
+
+    .print-footer { text-align: center; margin-top: 50px; font-size: 10px; color: #666; }
+  }
+</style>
+
+
+
+<div class="container-fluid default-dashboard">
+  <div class="row">
+
+    <div class="col-12 project-list">
+      <div class="card">
+          <div class="row align-items-center">
+              <div class="col-6 p-0">
+                  <ul class="nav nav-tabs border-tab d-flex" role="tablist">
+                      <li class="nav-item">
+                          <a class="nav-link active" href="#" role="tab" aria-selected="true">
+                              <i class="fa {% if page_kind == 'pharmacy' %}fa-medkit{% else %}fa-stethoscope{% endif %} me-2"></i>{{ title }}
+                          </a>
+                      </li>
+                  </ul>
+              </div>
+              <div class="col-6 p-0 d-flex justify-content-end align-items-center gap-2">
+                  <a class="btn btn-primary" href="{% url create_url_name %}">
+                      <i class="fa fa-plus-square me-2"></i>New {{ page_kind|title }} Bill
+                  </a>
+              </div>
+          </div>
+      </div>
+    </div>
+
+    <div class="col-md-12">
+      <form class="card p-3 mb-3" method="get" id="filterForm">
+        <div class="row g-3 align-items-end">
+          <div class="col-12 col-lg-4">
+            <label class="form-label mb-1 small text-muted"><i class="fa fa-bolt me-1"></i>Quick range</label>
+            <div class="btn-group w-100" role="group">
+              <button class="btn btn-outline-secondary" type="button" data-range="today">
+                <i class="fa fa-calendar me-1"></i>Today
+              </button>
+              <button class="btn btn-outline-secondary" type="button" data-range="7d">
+                <i class="fa fa-calendar me-1"></i>Last 7 days
+              </button>
+              <button class="btn btn-outline-secondary" type="button" data-range="month">
+                <i class="fa fa-calendar me-1"></i>This month
+              </button>
+            </div>
+          </div>
+
+          <div class="col-6 col-lg-2">
+            <label class="form-label mb-1 small text-muted"><i class="fa fa-sign-in me-1"></i>From</label>
+            <input type="date" class="form-control" name="from" value="{{ selected.from|date:'Y-m-d' }}">
+          </div>
+          <div class="col-6 col-lg-2">
+            <label class="form-label mb-1 small text-muted"><i class="fa fa-sign-out me-1"></i>To</label>
+            <input type="date" class="form-control" name="to" value="{{ selected.to|date:'Y-m-d' }}">
+          </div>
+
+
+           <div class="col-12 col-md-2">
+            <label class="form-label mb-1 small text-muted">
+              <i class="fa fa-money me-1"></i>Balance
+            </label>
+            <select class="form-select" name="balance_status">
+              <option value="" {% if not selected.balance_status %}selected{% endif %}>All</option>
+              <option value="due" {% if selected.balance_status == 'due' %}selected{% endif %}>Due</option>
+              <option value="advance" {% if selected.balance_status == 'advance' %}selected{% endif %}>Advance</option>
+              <option value="settled" {% if selected.balance_status == 'settled' %}selected{% endif %}>Settled</option>
+            </select>
+          </div>
+
+          <div class="col-12 col-lg-2">
+            <label class="form-label mb-1 small text-muted"><i class="fa fa-credit-card me-1"></i>Method</label>
+            <select class="form-select" name="method">
+              {% for v, label in method_choices %}
+                <option value="{{ v }}" {% if selected.method == v %}selected{% endif %}>{{ label }}</option>
+              {% endfor %}
+            </select>
+          </div>
+
+
+          <div class="col-12 d-flex flex-wrap gap-2 justify-content-lg-end">
+            <button class="btn btn-outline-secondary" type="submit">
+              <i class="fa fa-filter me-2"></i>Filter
+            </button>
+            <a class="btn btn-light" href="?">
+              <i class="fa fa-refresh me-2"></i>Clear
+            </a>
+            <button type="button" class="btn btn-outline-success" onclick="printBills()">
+
+              <i class="fa fa-print me-2"></i>Print
+            </button>
+          </div>
+        </div>
+      </form>
+    </div>
+
+    <div class="col-sm-12">
+      <div class="card shadow-sm">
+        <div class="card-body">
+          <div class="table-responsive">
+            <table class="table table-hover table-sm align-middle display" id="bills-table">
+              <thead>
+                <tr>
+                  <th class="text-nowrap"><i class="fa fa-hashtag me-1"></i></th>
+                  <th class="text-nowrap"><i class="fa fa-book me-1"></i>Bill</th>
+                  <th class="text-nowrap"><i class="fa fa-calendar me-1"></i>Date</th>
+                  <th><i class="fa fa-user me-1"></i>Patient</th>
+                  <th class="text-end" style="width: 4rem;">Total</th>
+                  <th class="text-end" style="width: 4rem;">Paid</th>
+                  <th class="text-end" style="width: 4rem;">Balance</th>
+                  <th class="text-nowrap"><i class="fa fa-credit-card me-1"></i>Method</th>
+                  <th class="text-nowrap"><i class="fa fa-info-circle me-1"></i>Status</th>
+                  <th class="text-center"><i class="fa fa-cog me-1"></i>Action</th>
+                </tr>
+              </thead>
+              <tbody>
+                {% for b in bills %}
+                <tr>
+                  <td class="text-nowrap">{{ forloop.counter }}</td>
+                  <td class="font-monospace">
+                    <a class="text-decoration-none" href="{% url 'bill_receipt' b.pk %}">{{ b.bill_number }}</a>
+                  </td>
+                  <td class="text-nowrap">{{ b.bill_date|date:"d-M-Y h:i A" }}</td>
+                  <td>
+                    <div class="fw-semibold">{{ b.patient.name }}</div>
+                    <div class="small text-muted">{{ b.patient.phone_number }}</div>
+                  </td>
+                  <td class="text-end fw-semibold">{{ b.total_amount }}</td>
+                  <td class="text-end">{{ b.paid_amount }}</td>
+                  <td class="text-end">
+                    {% if b.due > 0 %}
+                      ₹ {{ b.due }} <span class="badge bg-danger">Due</span>
+                    {% elif b.advance > 0 %}
+                      ₹ {{ b.advance }} <span class="badge bg-success">Advance</span>
+                    {% else %}
+                      <span class="text-muted">0</span>
+                    {% endif %}
+                  </td>
+
+                  <td class="text-nowrap">
+                    {% with p=b.payments.last %}
+                      {{ p.get_method_display|default:"—" }}
+                    {% endwith %}
+
+                  </td>
+
+
+                  <td class="text-nowrap">
+                    {% if b.paid_amount >= b.total_amount %}
+                      <span class="bill-badge badge-paid">Paid</span>
+                    {% elif b.paid_amount > 0 %}
+                      <span class="bill-badge badge-partial">Partial</span>
+                    {% else %}
+                      <span class="bill-badge badge-unpaid">Unpaid</span>
+                    {% endif %}
+                  </td>
+                  <td class="text-end">
+                    <div class="btn-group btn-group-sm">
+                      <a class="btn btn-outline-secondary p-3" href="{% url 'bill_receipt' b.pk %}">
+                        <i class="fa fa-eye"></i>
+                      </a>
+                      {% if page_kind == 'service' %}
+                        <a class="btn btn-outline-warning p-3" href="{% url 'service_bill_edit' b.pk %}">
+                          <i class="fa fa-pencil"></i>
+                        </a>
+                      {% else %}
+                        <a class="btn btn-outline-warning p-3" href="{% url 'pharmacy_sale_edit' b.pk %}">
+                          <i class="fa fa-pencil"></i>
+                        </a>
+                      {% endif %}
+                    </div>
+                  </td>
+                </tr>
+                {% empty %}
+                <tr class="bg-light">
+                  <td colspan="12" class="text-center text-muted py-4">
+                    <i class="fa fa-inbox me-2"></i>No bills found.
+                  </td>
+                </tr>
+                {% endfor %}
+              </tbody>
+              <tfoot class="fw-bold">
+                  <tr>
+                    <td colspan="4" class="text-end">Total:</td>
+                    <td class="text-end" id="total-amount-footer">₹ 0.00</td>
+                    <td class="text-end" id="paid-amount-footer">₹ 0.00</td>
+                    <td class="text-end" id="balance-amount-footer">₹ 0.00</td>
+                    <td></td>
+                    <td></td>
+                    <td></td>
+                  </tr>
+              </tfoot>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+
+<div class="bill-print-container">
+  <div class="print-header">
+    <div class="print-header-left">
+      <img src="{% static 'assets/images/logo/dlapp_logo_grncut.png' %}" alt="DLapp">
+    </div>
+    <div class="print-header-right">
+      <h1>D Lapp Hair Regenerative Clinic</h1>
+      <p>
+        Kottayil Arcade, Malaparamba,<br>
+        Kozhikode, Kerala 673009<br>
+        Phone: +91 8593957885 | Email: info@dlapphairclinic.com
+      </p>
+    </div>
+  </div>
+
+  <div style="text-align:center; margin-bottom:20px;">
+    <h2 style="font-size:18px; margin-bottom:5px;">{{ title }} List</h2>
+    <p>
+      Balance: <span id="printBalance"></span> |
+      Method: <span id="printMethod"></span> |
+      Date Range: <span id="printDateRange"></span>
+    </p>
+  </div>
+
+  <table class="print-table">
+    <thead>
+      <tr>
+        <th style="width:5%;">#</th>
+        <th style="width:12%;">Bill</th>
+        <th style="width:17%;">Date &amp; Time</th>
+        <th style="width:23%;">Patient</th>
+        <th style="width:10%;">Total</th>
+        <th style="width:10%;">Paid</th>
+        <th style="width:10%;">Balance</th>
+        <th style="width:7%;">Method</th>
+        <th style="width:6%;">Status</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for b in bills %}
+      <tr>
+        <td>{{ forloop.counter }}</td>
+        <td>{{ b.bill_number }}</td>
+        <td>{{ b.bill_date|date:"d-M-Y h:i A" }}</td>
+        <td>{{ b.patient.name }}</td>
+        <td>₹ {{ b.total_amount|floatformat:2 }}</td>
+        <td>₹ {{ b.paid_amount|floatformat:2 }}</td>
+        <td>
+          {% if b.due > 0 %}
+            ₹ {{ b.due|floatformat:2 }} (Due)
+          {% elif b.advance > 0 %}
+            ₹ {{ b.advance|floatformat:2 }} (Advance)
+          {% else %}
+            ₹ 0.00
+          {% endif %}
+        </td>
+        <td>
+          {% with p=b.payments.last %}
+            {% if p %}{{ p.get_method_display }}{% else %}&mdash;{% endif %}
+          {% endwith %}
+        </td>
+        <td>
+          {% if b.paid_amount >= b.total_amount %}
+            Paid
+          {% elif b.paid_amount > 0 %}
+            Partial
+          {% else %}
+            Unpaid
+          {% endif %}
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+
+  <div class="print-footer">
+    Generated by {{ request.user.get_full_name|default:request.user.username }} on {% now "F d, Y, h:i A" %}.
+  </div>
+</div>
+
+
+
+<script>
+// Keep only this initialization for bills-table + filters
+document.addEventListener('DOMContentLoaded', function () {
+  console.log('DEBUG: Initializing bills table and filters');
+
+  const form = document.getElementById('filterForm');
+  if (form) {
+    const fromI = form.querySelector('input[name="from"]');
+    const toI   = form.querySelector('input[name="to"]');
+    const qBtns = form.querySelectorAll('[data-range]');
+
+    // --- helpers (local dates) ---
+    const pad = n => String(n).padStart(2, '0');
+    const fmt = d => `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`;
+    const parseISO = s => {
+      if (!s) return null;
+      const [y,m,d] = s.split('-').map(Number);
+      return new Date(y, m-1, d);
+    };
+    const today = (() => { const n=new Date(); return new Date(n.getFullYear(), n.getMonth(), n.getDate()); })();
+    const start7d = new Date(today.getFullYear(), today.getMonth(), today.getDate() - 6);
+    const monthStart = new Date(today.getFullYear(), today.getMonth(), 1);
+    const monthEnd   = new Date(today.getFullYear(), today.getMonth()+1, 0);
+
+    const clearActive = () => qBtns.forEach(b => { b.classList.remove('active'); b.setAttribute('aria-pressed','false'); });
+    const setActive   = (btn) => { clearActive(); if (btn) { btn.classList.add('active'); btn.setAttribute('aria-pressed','true'); } };
+
+    const syncMinMax = () => {
+      if (!fromI || !toI) return;
+      toI.min   = fromI.value || '';
+      fromI.max = toI.value || '';
+    };
+
+    // Infer active button from URL (?range=...) or from the inputs (from/to)
+    (function initActiveFromState(){
+      const url = new URL(window.location);
+      const r = url.searchParams.get('range');
+
+      if (r && form.querySelector(`[data-range="${r}"]`)) {
+        setActive(form.querySelector(`[data-range="${r}"]`));
+        return;
+      }
+
+      // fallback: infer from inputs
+      const f = parseISO(fromI?.value);
+      const t = parseISO(toI?.value);
+      if (!f || !t) { clearActive(); return; }
+
+      const fISO = fmt(f), tISO = fmt(t);
+      if (fISO === fmt(today) && tISO === fmt(today)) {
+        setActive(form.querySelector('[data-range="today"]')); return;
+      }
+      if (fISO === fmt(start7d) && tISO === fmt(today)) {
+        setActive(form.querySelector('[data-range="7d"]')); return;
+      }
+      if (fISO === fmt(monthStart) && tISO === fmt(monthEnd)) {
+        setActive(form.querySelector('[data-range="month"]')); return;
+      }
+      clearActive();
+    })();
+
+    syncMinMax();
+
+    // Quick range click: set ?range=..., drop from/to, keep other filters, navigate
+    qBtns.forEach(btn => {
+      btn.addEventListener('click', () => {
+        const url = new URL(window.location);
+        url.searchParams.set('range', btn.getAttribute('data-range'));
+        url.searchParams.delete('from');
+        url.searchParams.delete('to');
+        window.location.href = url.toString();
+      });
+    });
+
+    // Manual date edits: clear active state, fix inverted ranges, keep min/max (NO auto-submit)
+    const handleDateChange = () => {
+      if (fromI?.value && toI?.value && toI.value < fromI.value) {
+        toI.value = fromI.value;
+      }
+      syncMinMax();
+      clearActive();
+    };
+    fromI?.addEventListener('input', handleDateChange);
+    toI?.addEventListener('input', handleDateChange);
+
+    // Ensure GET submission drops any stale query (?range=...) by forcing path-only action
+    form.setAttribute('action', window.location.pathname);
+  }
+
+  // --- DataTables Initialization ---
+  if (window.jQuery && $.fn.DataTable) {
+    const tableElement = $('#bills-table');
+
+    if ($.fn.DataTable.isDataTable(tableElement)) {
+      tableElement.DataTable().destroy();
+    }
+
+    const table = tableElement.DataTable({
+      pageLength: 25,
+      order: [[2, 'desc']], // Date desc
+      columnDefs: [
+        { orderable: false, targets: [9] } // Action col index
+      ],
+      dom: '<"d-flex flex-wrap align-items-center gap-2"f>t<"d-flex justify-content-between mt-3"ip>'
+    });
+
+    function updateFooterTotals() {
+      const toNumber = (t) => Number(String(t || '').replace(/[^0-9.\-]/g, '')) || 0;
+      const sumCol = (idx) =>
+        table.column(idx, { search: 'applied', page: 'current' }).data().toArray()
+             .map(toNumber).reduce((a, b) => a + b, 0);
+
+      const total = sumCol(4); // Total
+      const paid  = sumCol(5); // Paid
+      const net   = total - paid; // positive = due, negative = advance
+
+      $('#total-amount-footer').text('₹ ' + total.toFixed(2));
+      $('#paid-amount-footer') .text('₹ ' + paid.toFixed(2));
+      $('#balance-amount-footer').text('₹ ' + net.toFixed(2));
+    }
+
+    table.on('draw', updateFooterTotals);
+    updateFooterTotals();
+  }
+});
+</script>
+
+
+<script>
+function printBills() {
+  const balanceSel = document.querySelector('select[name="balance_status"]');
+  const methodSel  = document.querySelector('select[name="method"]');
+  const fromI = document.querySelector('input[name="from"]');
+  const toI   = document.querySelector('input[name="to"]');
+
+  // Balance & Method display
+  document.getElementById('printBalance').textContent =
+    balanceSel && balanceSel.value ? balanceSel.options[balanceSel.selectedIndex].text : 'All';
+  document.getElementById('printMethod').textContent =
+    methodSel && methodSel.value ? methodSel.options[methodSel.selectedIndex].text : 'All';
+
+  // Date range display
+  const from = fromI && fromI.value ? fromI.value : '';
+  const to   = toI && toI.value ? toI.value : '';
+  let dr = 'All Dates';
+  if (from && to) dr = `From ${from} to ${to}`;
+  else if (from)  dr = `From ${from}`;
+  else if (to)    dr = `To ${to}`;
+  document.getElementById('printDateRange').textContent = dr;
+
+  window.print();
+}
+</script>
+

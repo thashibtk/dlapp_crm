@@ -1,0 +1,425 @@
+{% extends 'base.html' %}
+{% block content %}
+
+<div class="container-fluid default-dashboard">
+  <div class="row">
+
+    <!-- Header -->
+    <div class="col-12 project-list">
+        <div class="card">
+            <div class="row">
+                <div class="col-6 p-0">
+                    <ul class="nav nav-tabs border-tab d-flex" role="tablist">
+                        <li class="nav-item">
+                            <a class="nav-link active" href="#" role="tab" aria-selected="true">
+                                {% if is_edit %}
+                                <i class="fa fa-pencil-square-o me-2"></i>Edit Appointment
+                                {% else %}
+                                <i class="fa fa-calendar-plus-o me-2"></i>New Appointment
+                                {% endif %}
+                            </a>
+                        </li>
+                    </ul>
+                </div>
+                <div class="col-6 p-0 d-flex justify-content-end align-items-center">
+                    <a class="btn btn-outline-secondary" href="{% url 'appointment_list' %}">
+                        <i class="fa fa-arrow-left me-2"></i>Back to Appointments
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Form -->
+    <form method="post" novalidate class="d-print-none">
+      {% csrf_token %}
+      {% if form.non_field_errors %}
+        <div class="alert alert-danger"><i class="fa fa-exclamation-triangle me-2"></i>{{ form.non_field_errors }}</div>
+      {% endif %}
+
+      <div class="card shadow-sm">
+        <div class="card-body">
+          <h6 class="text-muted mb-3"><i class="fa fa-info-circle me-2"></i>Details</h6>
+
+          <div class="row g-3">
+            <!-- Patient -->
+            <div class="col-md-6">
+              <label class="form-label" for="{{ form.patient.id_for_label }}">
+                <i class="fa fa-user me-1"></i>Patient
+              </label>
+              <div class="position-relative">
+                {{ form.patient }}
+                <div class="search-dropdown" id="patient-dropdown" style="display: none;">
+                  <div class="search-input">
+                    <input type="text" class="form-control" id="patient-search" placeholder="Search patients...">
+                  </div>
+                  <div class="search-results" id="patient-results"></div>
+                </div>
+              </div>
+              {% if form.patient.errors %}
+                <div class="invalid-feedback d-block"><i class="fa fa-warning me-1"></i>{{ form.patient.errors|join:", " }}</div>
+              {% endif %}
+            </div>
+
+            <!-- Doctor -->
+            <div class="col-md-3">
+              <label class="form-label" for="{{ form.assigned_doctor.id_for_label }}">
+                <i class="fa fa-user-md me-1"></i>Doctor
+              </label>
+              <div class="position-relative">
+                {{ form.assigned_doctor }}
+                <div class="search-dropdown" id="doctor-dropdown" style="display: none;">
+                  <div class="search-input">
+                    <input type="text" class="form-control" id="doctor-search" placeholder="Search doctors...">
+                  </div>
+                  <div class="search-results" id="doctor-results"></div>
+                </div>
+              </div>
+              {% if form.assigned_doctor.errors %}
+                <div class="invalid-feedback d-block"><i class="fa fa-warning me-1"></i>{{ form.assigned_doctor.errors|join:", " }}</div>
+              {% endif %}
+            </div>
+
+            <!-- Appointment Date -->
+            <div class="col-md-3">
+              <label class="form-label" for="{{ form.appointment_date.id_for_label }}">
+                <i class="fa fa-calendar me-1"></i>Appointment date
+              </label>
+              {{ form.appointment_date }}
+              <div class="form-text">
+                <i class="fa fa-info-circle me-1"></i>{{ form.fields.appointment_date.help_text|default:"Select the appointment date" }}
+              </div>
+              {% if form.appointment_date.errors %}
+                <div class="invalid-feedback d-block"><i class="fa fa-warning me-1"></i>{{ form.appointment_date.errors|join:", " }}</div>
+              {% endif %}
+            </div>
+
+
+            <!-- Sittings (if present) -->
+            {% if form.sittings %}
+            <div class="col-md-3">
+              <label class="form-label" for="{{ form.sittings.id_for_label }}">
+                <i class="fa fa-list-ul me-1"></i>Sittings
+              </label>
+              {{ form.sittings }}
+              {% if form.sittings.errors %}
+                <div class="invalid-feedback d-block"><i class="fa fa-warning me-1"></i>{{ form.sittings.errors|join:", " }}</div>
+              {% endif %}
+            </div>
+            {% endif %}
+
+            <!-- Status (edit only) -->
+            {% if is_edit and form.status %}
+              <div class="col-md-3">
+                <label class="form-label" for="{{ form.status.id_for_label }}">
+                  <i class="fa fa-flag me-1"></i>Status
+                </label>
+                {{ form.status }}
+                {% if form.status.errors %}
+                  <div class="invalid-feedback d-block"><i class="fa fa-warning me-1"></i>{{ form.status.errors|join:", " }}</div>
+                {% endif %}
+              </div>
+            {% endif %}
+
+            <!-- Notes -->
+            <div class="col-12">
+              <label class="form-label" for="{{ form.notes.id_for_label }}">
+                <i class="fa fa-sticky-note-o me-1"></i>Notes
+              </label>
+              {{ form.notes }}
+              {% if form.notes.errors %}
+                <div class="invalid-feedback d-block"><i class="fa fa-warning me-1"></i>{{ form.notes.errors|join:", " }}</div>
+              {% endif %}
+            </div>
+
+          </div>
+        </div>
+
+        <div class="card-footer d-flex justify-content-end gap-2">
+          <a class="btn btn-light" href="{% url 'appointment_list' %}">
+            <i class="fa fa-times me-2"></i>Cancel
+          </a>
+          <button class="btn btn-primary">
+            <i class="fa fa-save me-2"></i>Save
+          </button>
+        </div>
+      </div>
+    </form>
+
+  </div>
+</div>
+
+<style>
+  @media print {
+    .nav, .btn, .d-print-none { display: none !important; }
+    .card { border: none !important; box-shadow: none !important; }
+  }
+
+  /* Search dropdown styles */
+  .search-dropdown {
+    position: absolute;
+    top: 100%;
+    left: 0;
+    right: 0;
+    background: white;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    z-index: 1050;
+    max-height: 300px;
+    overflow-y: auto;
+  }
+
+  .search-input {
+    padding: 8px;
+    border-bottom: 1px solid #eee;
+  }
+
+  .search-results {
+    max-height: 250px;
+    overflow-y: auto;
+  }
+
+  .search-result-item {
+    padding: 10px 12px;
+    border-bottom: 1px solid #f0f0f0;
+    cursor: pointer;
+    transition: background-color 0.2s;
+  }
+
+  .search-result-item:hover {
+    background-color: #f8f9fa;
+  }
+
+  .search-result-item:last-child {
+    border-bottom: none;
+  }
+
+  .search-result-item.selected {
+    background-color: #e3f2fd;
+  }
+
+  .no-results {
+    padding: 15px;
+    text-align: center;
+    color: #666;
+    font-style: italic;
+  }
+
+  /* Hide original select when dropdown is open */
+  .dropdown-hidden {
+    opacity: 0;
+    pointer-events: none;
+  }
+
+  /* Custom select styling to look like dropdown trigger */
+  .custom-select-trigger {
+    position: relative;
+    background: white;
+    border: 1px solid #ced4da;
+    border-radius: 0.375rem;
+    padding: 0.375rem 2.25rem 0.375rem 0.75rem;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+
+  .custom-select-trigger:after {
+    content: '\f078';
+    font-family: 'FontAwesome';
+    position: absolute;
+    right: 0.75rem;
+    pointer-events: none;
+  }
+
+  .custom-select-trigger.open:after {
+    content: '\f077';
+  }
+</style>
+
+<!-- Optional: enhance date input -->
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
+<script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+  // Add bootstrap classes to default widgets if not already set
+  document.querySelectorAll('select').forEach(s => s.classList.add('form-select'));
+  document.querySelectorAll('input:not([type=checkbox]):not([type=radio]):not([type=submit]), textarea')
+    .forEach(i => i.classList.add('form-control'));
+
+  // Date / DateTime picker
+  const apptEl = document.querySelector('[name="appointment_date"]');
+  if (apptEl && typeof flatpickr !== 'undefined') {
+    const isDateTime = apptEl.getAttribute('type') === 'datetime-local';
+    const minAttr = apptEl.getAttribute('min');
+
+    const base = {
+      altInput: true,
+      allowInput: true,
+      disableMobile: true // avoid native mobile pickers clashing
+    };
+
+    const opts = isDateTime
+      ? {
+          enableTime: true,
+          time_24hr: false,                // <-- was true
+          minuteIncrement: 5,
+          dateFormat: 'Y-m-d\\TH:i',       // keep 24h here for the native input value
+          altFormat: 'D, d M Y · h:i K',
+          minDate: minAttr ? minAttr : 'today'
+        }
+      : {
+          dateFormat: 'Y-m-d',
+          altFormat: 'd-m-Y',
+          minDate: minAttr ? minAttr : 'today'
+        };
+
+    flatpickr(apptEl, Object.assign({}, base, opts));
+  }
+
+  // Searchable dropdown functionality
+  function createSearchableDropdown(selectElement, searchInputId, dropdownId, resultsId) {
+    const originalSelect = selectElement;
+    const searchInput = document.getElementById(searchInputId);
+    const dropdown = document.getElementById(dropdownId);
+    const results = document.getElementById(resultsId);
+
+    if (!originalSelect || !searchInput || !dropdown || !results) return;
+
+    // Store all options
+    const allOptions = Array.from(originalSelect.options).map(option => ({
+      value: option.value,
+      text: option.textContent,
+      selected: option.selected
+    }));
+
+    // Create custom trigger
+    const trigger = document.createElement('div');
+    trigger.className = 'custom-select-trigger form-select d-flex align-items-center justify-content-between';
+    trigger.setAttribute('tabindex', '0');
+    trigger.setAttribute('role', 'button');
+    trigger.innerHTML = getSelectedText() || 'Select...';
+
+    // Insert trigger after original select and hide original
+    originalSelect.parentNode.insertBefore(trigger, originalSelect.nextSibling);
+    originalSelect.style.display = 'none';
+
+    function getSelectedText() {
+      const selected = originalSelect.selectedOptions[0];
+      return selected && selected.value ? selected.textContent : '';
+    }
+
+    function updateTriggerText() {
+      trigger.innerHTML = getSelectedText() || 'Select...';
+    }
+
+    function showDropdown() {
+      dropdown.style.display = 'block';
+      trigger.classList.add('open');
+      searchInput.focus();
+      renderResults(allOptions);
+    }
+
+    function hideDropdown() {
+      dropdown.style.display = 'none';
+      trigger.classList.remove('open');
+      searchInput.value = '';
+      results.innerHTML = '';
+    }
+
+    function renderResults(options) {
+      results.innerHTML = '';
+
+      if (options.length === 0) {
+        results.innerHTML = '<div class="no-results px-2 py-1 text-muted">No results found</div>';
+        return;
+      }
+
+      options.forEach(option => {
+        if (!option.value) return; // Skip empty option
+
+        const item = document.createElement('div');
+        item.className = 'search-result-item px-2 py-1';
+        if (option.selected) item.classList.add('selected');
+        item.textContent = option.text;
+        item.dataset.value = option.value;
+
+        item.addEventListener('click', function () {
+          // Update original select
+          originalSelect.value = option.value;
+          originalSelect.dispatchEvent(new Event('change', { bubbles: true }));
+
+          // Update visual state
+          updateTriggerText();
+          hideDropdown();
+        });
+
+        results.appendChild(item);
+      });
+    }
+
+    function filterOptions(searchTerm) {
+      const term = searchTerm.toLowerCase();
+      const filtered = allOptions.filter(option =>
+        option.text.toLowerCase().includes(term)
+      );
+      renderResults(filtered);
+    }
+
+    // Event listeners
+    trigger.addEventListener('click', function (e) {
+      e.stopPropagation();
+      if (dropdown.style.display === 'block') {
+        hideDropdown();
+      } else {
+        showDropdown();
+      }
+    });
+
+    trigger.addEventListener('keydown', function (e) {
+      if (e.key === 'Enter' || e.key === ' ') {
+        e.preventDefault();
+        showDropdown();
+      } else if (e.key === 'Escape') {
+        hideDropdown();
+      }
+    });
+
+    searchInput.addEventListener('input', function () {
+      filterOptions(this.value);
+    });
+
+    searchInput.addEventListener('keydown', function (e) {
+      if (e.key === 'Escape') {
+        hideDropdown();
+      }
+    });
+
+    // Close dropdown when clicking outside
+    document.addEventListener('click', function (e) {
+      if (!dropdown.contains(e.target) && !trigger.contains(e.target)) {
+        hideDropdown();
+      }
+    });
+
+    // Initialize trigger text
+    updateTriggerText();
+  }
+
+  // Initialize searchable dropdowns
+  const patientSelect = document.querySelector('[name="patient"]');
+  const doctorSelect = document.querySelector('[name="assigned_doctor"]');
+
+  if (patientSelect) {
+    createSearchableDropdown(patientSelect, 'patient-search', 'patient-dropdown', 'patient-results');
+  }
+
+  if (doctorSelect) {
+    createSearchableDropdown(doctorSelect, 'doctor-search', 'doctor-dropdown', 'doctor-results');
+  }
+});
+</script>
+
+
+{% endblock %}

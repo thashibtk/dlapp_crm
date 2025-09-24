@@ -1,0 +1,162 @@
+{% extends 'base.html' %}
+{% block content %}
+
+<div class="container-fluid default-dashboard">
+  <div class="row">
+
+    <!-- Header -->
+    <div class="col-md-12 project-list">
+      <div class="card">
+        <div class="row">
+          <div class="col-md-6 p-0">
+            <ul class="nav nav-tabs border-tab d-flex" role="tablist">
+              <li class="nav-item">
+                <a class="nav-link active" href="#" role="tab" aria-selected="true">
+                  <i data-feather="calendar"></i>
+                  {% if is_edit %}Edit Follow-up{% else %}New Follow-up{% endif %}
+                </a>
+              </li>
+              {% if patient %}
+              <li class="nav-item">
+                <span class="text-muted small">({{ patient.name }} • {{ patient.file_number }})</span>
+              </li>
+              {% endif %}
+            </ul>
+          </div>
+          <div class="col-md-6 p-0 d-flex justify-content-end align-items-center gap-2">
+            {% if patient %}
+              <a class="btn btn-outline-secondary" href="{% url 'patient_detail' pk=patient.pk %}">
+                <i class="fa fa-arrow-left me-2"></i>Back to Patient
+              </a>
+            {% else %}
+              <a class="btn btn-outline-secondary" href="{% url 'patient_list' %}">
+                <i class="fa fa-arrow-left me-2"></i>Back to List
+              </a>
+            {% endif %}
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Form -->
+    <form method="post" novalidate class="d-print-none">
+      {% csrf_token %}
+      {% if form.non_field_errors %}
+        <div class="alert alert-danger">{{ form.non_field_errors }}</div>
+      {% endif %}
+
+      <div class="card shadow-sm">
+        <div class="card-body">
+
+          <h6 class="text-muted mb-3">Schedule</h6>
+          <div class="row g-3">
+            <div class="col-md-6">
+              <label class="form-label" for="{{ form.followup_date.id_for_label }}">Follow-up date</label>
+              {{ form.followup_date }}
+              {% if form.followup_date.errors %}
+                <div class="invalid-feedback d-block">{{ form.followup_date.errors|join:", " }}</div>
+              {% endif %}
+            </div>
+
+            <div class="col-md-6">
+              <label class="form-label" for="{{ form.next_followup_date.id_for_label }}">Next follow-up (optional)</label>
+              {{ form.next_followup_date }}
+              {% if form.next_followup_date.errors %}
+                <div class="invalid-feedback d-block">{{ form.next_followup_date.errors|join:", " }}</div>
+              {% endif %}
+            </div>
+          </div>
+
+          <hr class="my-4">
+
+          <h6 class="text-muted mb-3">Assessment</h6>
+          <div class="row g-3">
+            <div class="col-md-4">
+              <label class="form-label" for="{{ form.overall_response_percentage.id_for_label }}">Response (%)</label>
+              {{ form.overall_response_percentage }}
+              {% if form.overall_response_percentage.errors %}
+                <div class="invalid-feedback d-block">{{ form.overall_response_percentage.errors|join:", " }}</div>
+              {% endif %}
+            </div>
+            <div class="col-md-4">
+              <label class="form-label" for="{{ form.patient_satisfaction.id_for_label }}">Satisfaction (1–10)</label>
+              {{ form.patient_satisfaction }}
+              {% if form.patient_satisfaction.errors %}
+                <div class="invalid-feedback d-block">{{ form.patient_satisfaction.errors|join:", " }}</div>
+              {% endif %}
+            </div>
+          </div>
+
+          <hr class="my-4">
+
+          <h6 class="text-muted mb-3">Notes</h6>
+          <div class="row g-3">
+            <div class="col-md-6">
+              <label class="form-label" for="{{ form.future_recommendations.id_for_label }}">Future recommendations</label><br>
+              {{ form.future_recommendations }}
+              {% if form.future_recommendations.errors %}
+                <div class="invalid-feedback d-block">{{ form.future_recommendations.errors|join:", " }}</div>
+              {% endif %}
+            </div>
+            <div class="col-md-6">
+              <label class="form-label" for="{{ form.maintenance_plan.id_for_label }}">Maintenance plan</label>
+              <br>
+              {{ form.maintenance_plan }}
+            </div>
+            <div class="col-12">
+              <label class="form-label" for="{{ form.doctor_remarks.id_for_label }}">Doctor remarks</label>
+              <br>
+              {{ form.doctor_remarks }}
+            </div>
+          </div>
+
+        </div>
+
+        <div class="card-footer d-flex justify-content-end gap-2">
+          {% if patient %}
+            <a class="btn btn-light" href="{% url 'patient_detail' pk=patient.pk %}">Cancel</a>
+          {% else %}
+            <a class="btn btn-light" href="{% url 'patient_list' %}">Cancel</a>
+          {% endif %}
+          <button class="btn btn-primary">Save</button>
+        </div>
+      </div>
+    </form>
+
+  </div>
+</div>
+
+<style>
+  @media print {
+    .nav, .btn, .d-print-none { display:none!important }
+    .card{border:none!important; box-shadow:none!important}
+  }
+</style>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
+<script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+  // Enhance followup_date (should not allow future dates)
+  var followupInput = document.querySelector('[name="followup_date"]');
+  flatpickr(followupInput, {
+    dateFormat: 'Y-m-d',
+    altInput: true,
+    altFormat: 'd-m-Y',
+    allowInput: true,
+    maxDate: 'today',
+    defaultDate: followupInput ? followupInput.value : undefined
+  });
+  // Enhance next_followup_date (should allow future dates)
+  var nextFollowupInput = document.querySelector('[name="next_followup_date"]');
+  flatpickr(nextFollowupInput, {
+    dateFormat: 'Y-m-d',
+    altInput: true,
+    altFormat: 'd-m-Y',
+    allowInput: true,
+    defaultDate: nextFollowupInput ? nextFollowupInput.value : undefined
+    // no maxDate
+  });
+});
+</script>
+
+{% endblock %}

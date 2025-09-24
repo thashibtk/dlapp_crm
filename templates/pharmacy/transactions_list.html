@@ -1,0 +1,427 @@
+{% extends 'base.html' %}
+{% load roles %}
+{% load static %}
+{% block content %}
+
+
+<style>
+  .custom-scrollbar { max-height: 70vh; overflow: auto; }
+  .tx-ref, .tx-batch { font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace; }
+  @media print { .d-print-none { display: none !important; } .card { box-shadow:none !important; border:none !important; } }
+  /* subtle row accent on hover */
+  .table-hover tbody tr:hover { background: #fafbff; }
+  /* sticky table head inside the scrolling container */
+  .custom-scrollbar thead th { position: sticky; top: 0; z-index: 2; background: #f8f9fa; }
+</style>
+
+<style>
+  /* Adjusting the search filter within the flex container */
+  div.dataTables_wrapper div.dataTables_filter {
+    position: static;
+    top: auto;
+    right: auto;
+    flex: 1 1 auto;
+    min-width: 200px;
+    max-width: 300px;
+    margin-left: auto;
+    text-align: right;
+  }
+  @media (max-width: 767px) {
+    div.dataTables_wrapper div.dataTables_filter {
+      flex: 1 1 100%;
+      min-width: unset;
+      max-width: unset;
+      margin-left: 0;
+      text-align: left;
+      order: -1;
+      padding: 10px 0;
+    }
+  }
+</style>
+<style>
+  /* --- Print Styles - A4 Table List --- */
+  .print-table-container { display: none; }
+
+  @media print {
+    @page { size: A4 portrait; margin: 10mm 8mm 15mm 8mm; }
+
+    body { margin:0!important; padding:0!important; font-family: Arial, Helvetica, sans-serif!important;
+           font-size:10pt!important; line-height:1.2!important; color:#000!important; background:#fff!important; width:100%!important; }
+
+    /* Hide everything by default */
+    body * { visibility: hidden !important; }
+
+    /* Show only the print container and its contents */
+    .print-table-container, .print-table-container * { visibility: visible !important; }
+
+    /* Position print container */
+    .print-table-container {
+      display:block !important; position:absolute !important; left:0 !important; top:0 !important; width:100% !important;
+      margin:0 !important; padding:0 !important; background:#fff !important;
+    }
+
+    .print-header { display:flex !important; justify-content:space-between; align-items:flex-start;
+                    margin-bottom:30px; border-bottom:2px solid #333; padding-bottom:10px; }
+    .print-header-left { text-align:left; }
+    .print-header-right { text-align:right; }
+    .print-header img { width:80px; height:auto; }
+    .print-header h1 { font-size:24px; font-weight:bold; color:#2b5f60; margin:0; }
+    .print-header p { margin:5px 0; font-size:12px; color:#555; }
+
+    .print-table { width:100%; border-collapse:collapse; margin-top:20px; }
+
+    * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; color-adjust: exact !important; }
+
+    .print-table th, .print-table td { border:1px solid #ddd; padding:6px; text-align:left; font-size:11px; }
+    .print-table th { background-color:#2b5f60 !important; color:#fff !important; font-weight:bold; }
+    .print-table tbody tr:nth-child(even) { background-color:#f9f9f9 !important; }
+
+    .print-footer { text-align:center; margin-top:50px; font-size:10px; color:#666; }
+  }
+</style>
+
+
+<div class="container-fluid default-dashboard">
+  <div class="row">
+
+    <!-- Header -->
+    <div class="col-12 project-list d-print-none">
+      <div class="card">
+          <div class="row align-items-center">
+              <div class="col-6 p-0">
+                  <ul class="nav nav-tabs border-tab d-flex" role="tablist">
+                      <li class="nav-item">
+                          <a class="nav-link active" href="#" role="tab" aria-selected="true">
+                              <i class="fa fa-cubes me-2"></i>Pharmacy • Stock Transactions
+                          </a>
+                      </li>
+                  </ul>
+              </div>
+              <div class="col-6 p-0 d-flex justify-content-end align-items-center gap-2">
+
+                  {% if request.user|in_group:"PharmacyManager" or request.user|in_group:"OperationsManager" %}
+                  <a class="btn btn-primary" href="{% url 'pharmacy_tx_create' %}">
+                      <i class="fa fa-plus-square me-2"></i>New Transaction
+                  </a>
+                  {% endif %}
+              </div>
+          </div>
+      </div>
+    </div>
+
+    <!-- Filters -->
+    <div class="col-md-12 d-print-none">
+      <form class="card p-3 mb-3" method="get" id="filterForm" action="">
+        <div class="row g-3 align-items-end">
+
+
+          <!-- Date range -->
+          <div class="col-12 col-sm-8 col-lg-5">
+            <label class="form-label mb-1 small text-muted">
+              <i class="fa fa-calendar me-1"></i>Date range
+            </label>
+            <div class="row g-2">
+              <div class="col-6">
+                <input type="date" class="form-control" name="from" value="{{ selected.from|date:'Y-m-d' }}">
+              </div>
+              <div class="col-6">
+                <input type="date" class="form-control" name="to" value="{{ selected.to|date:'Y-m-d' }}">
+              </div>
+            </div>
+            <div class="d-flex flex-wrap gap-2 mt-2">
+              <button class="btn btn-outline-secondary btn-sm flex-fill" type="button" data-range="today" aria-pressed="false">
+                <i class="fa fa-calendar-day me-1"></i>Today
+              </button>
+              <button class="btn btn-outline-secondary btn-sm flex-fill" type="button" data-range="7d" aria-pressed="false">
+                <i class="fa fa-calendar-week me-1"></i>Last 7 days
+              </button>
+              <button class="btn btn-outline-secondary btn-sm flex-fill" type="button" data-range="month" aria-pressed="false">
+                <i class="fa fa-calendar-alt me-1"></i>This month
+              </button>
+            </div>
+          </div>
+          
+          <!-- Type -->
+          <div class="col-12 col-sm-4 col-lg-3">
+            <label class="form-label mb-1 small text-muted">
+              <i class="fa fa-filter me-1"></i>Type
+            </label>
+            <select name="type" class="form-select">
+              <option value="">All types</option>
+              {% for key, label in type_choices %}
+                <option value="{{ key }}" {% if selected_type == key %}selected{% endif %}>{{ label }}</option>
+              {% endfor %}
+            </select>
+          </div>
+
+          
+
+          <!-- Actions -->
+          <div class="col-12 col-lg-4 d-flex flex-wrap gap-2 justify-content-lg-end">
+            <button class="btn btn-outline-secondary" type="submit">
+              <i class="fa fa-filter me-2"></i>Apply
+            </button>
+            <a class="btn btn-light" href="?">
+              <i class="fa fa-refresh me-2"></i>Clear
+            </a>
+            <button type="button" class="btn btn-outline-success" onclick="printTx()">
+              <i class="fa fa-print me-2"></i>Print
+            </button>
+          </div>
+
+        </div>
+      </form>
+    </div>
+
+
+
+     <!-- Table -->
+    <div class="col-sm-12">
+      <div class="card">
+        <div class="card-body">
+          <div class="table-responsive custom-scrollbar">
+            <table class="display table table-hover align-middle" id="basic-1">
+              <thead>
+                <tr>
+                  <th class="text-nowrap"><i class="fa fa-clock-o me-1"></i>Date</th>
+                  <th><i class="fa fa-medkit me-1"></i>Medicine</th>
+                  <th class="text-nowrap"><i class="fa fa-tag me-1"></i>Type</th>
+                  <th class="text-end text-nowrap"><i class="fa fa-caret-up me-1"></i>Qty</th>
+                  <th class="text-end text-nowrap"><i class="fa fa-inr me-1"></i>Unit</th>
+   
+                  <th class="text-nowrap">Ref</th>
+                  <th class="text-nowrap">Action</th>
+                </tr>
+              </thead>
+              <tbody>
+                {% for x in txs %}
+                <tr>
+                  <td class="text-nowrap">{{ x.created_at|date:"d-M-Y h:i A" }}</td>
+                  <td>
+                    <div class="fw-semibold">{{ x.medicine.name }}</div>
+                    {% if x.medicine.strength %}
+                      <div class="small text-muted">{{ x.medicine.strength }}</div>
+                    {% endif %}
+                  </td>
+                  <td class="text-nowrap">
+                    {% if x.transaction_type == 'purchase' %}
+                      <span class="badge text-bg-success"><i class="fa fa-plus me-1"></i>Purchase</span>
+                    {% elif x.transaction_type == 'sale' %}
+                      <span class="badge text-bg-danger"><i class="fa fa-minus me-1"></i>Sale</span>
+                    {% elif x.transaction_type == 'adjustment' %}
+                      <span class="badge text-bg-warning text-dark"><i class="fa fa-balance-scale me-1"></i>Adjustment</span>
+                    {% else %}
+                      <span class="badge text-bg-secondary">{{ x.get_transaction_type_display }}</span>
+                    {% endif %}
+                  </td>
+                  <td class="text-end {% if x.quantity < 0 %}text-danger{% else %}text-success{% endif %} fw-semibold">
+                    {{ x.quantity }}
+                  </td>
+                  <td class="text-end">₹ {{ x.unit_price }}</td>
+                
+                  <td class="tx-ref">{{ x.reference_number|default:"—" }}</td>
+                  <td class="text-nowrap">
+                    <a class="btn btn-sm btn-outline-primary" href="{% url 'pharmacy_tx_detail' x.pk %}">
+                      <i class="fa fa-eye me-1"></i>Details
+                    </a>
+                  </td>
+                </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+
+<div class="print-table-container" id="printTxWrap">
+  <div class="print-header">
+    <div class="print-header-left">
+      <img src="{% static 'assets/images/logo/dlapp_logo_grncut.png' %}" alt="DLapp">
+    </div>
+    <div class="print-header-right">
+      <h1>D Lapp Hair Regenerative Clinic</h1>
+      <p>Kottayil Arcade, Malaparamba,<br> Kozhikode, Kerala 673009<br>
+         Phone: +91 8593957885 | Email: info@dlapphairclinic.com
+      </p>
+    </div>
+  </div>
+
+  <div style="text-align:center; margin-bottom:20px;">
+    <h2 style="font-size:18px; margin-bottom:5px;">Pharmacy • Stock Transactions</h2>
+    <p>
+      Type: <span id="pTxType">All</span>
+    </p>
+  </div>
+
+  <table class="print-table" id="printTxTable">
+    <thead>
+      <tr>
+        <th style="width:4%;">#</th>
+        <th style="width:18%;">Date</th>
+        <th style="width:28%;">Medicine</th>
+        <th style="width:12%;">Type</th>
+        <th style="width:10%;">Qty</th>
+        <th style="width:12%;">Unit</th>
+        <th style="width:16%;">Ref</th>
+      </tr>
+    </thead>
+    <tbody><!-- filled dynamically --></tbody>
+  </table>
+
+  <div class="print-footer">
+    Generated by {{ request.user.get_full_name|default:request.user.username }} on {% now "F d, Y, h:i A" %}
+  </div>
+</div>
+
+<script>
+function printTx() {
+  // Source table on screen
+  const srcTable = document.getElementById('basic-1');
+  const bodyRows = Array.from(srcTable.querySelectorAll('tbody tr'));
+
+  // Fill filter summary (Type)
+  const typeSelect = document.querySelector('select[name="type"]');
+  if (typeSelect) {
+    const txt = typeSelect.value ? (typeSelect.options[typeSelect.selectedIndex]?.text || typeSelect.value) : 'All';
+    document.getElementById('pTxType').textContent = txt;
+  }
+
+  // Target tbody
+  const printBody = document.querySelector('#printTxTable tbody');
+  printBody.innerHTML = '';
+
+  let i = 0;
+  bodyRows.forEach(r => {
+    // Treat rows hidden by style/display (or by DataTables) as not visible
+    if (r.style.display === 'none') return;
+
+    // Column order in your table:
+    // 0 Date, 1 Medicine, 2 Type, 3 Qty, 4 Unit, 5 Ref, 6 Action
+    const tds = r.querySelectorAll('td');
+    if (tds.length < 6) return;
+
+    const date    = tds[0]?.innerText.trim() || '';
+    const med     = tds[1]?.innerText.trim() || '';
+    const type    = tds[2]?.innerText.trim() || '';
+    const qty     = tds[3]?.innerText.trim() || '';
+    const unit    = tds[4]?.innerText.trim() || '';
+    const ref     = tds[5]?.innerText.trim() || '';
+
+    const tr = document.createElement('tr');
+    tr.innerHTML = `
+      <td>${++i}</td>
+      <td>${date}</td>
+      <td>${med}</td>
+      <td>${type}</td>
+      <td>${qty}</td>
+      <td>${unit}</td>
+      <td>${ref || '—'}</td>
+    `;
+    printBody.appendChild(tr);
+  });
+
+  if (i === 0) {
+    const tr = document.createElement('tr');
+    tr.innerHTML = `<td colspan="7" style="text-align:center; color:#666;">No transactions to print.</td>`;
+    printBody.appendChild(tr);
+  }
+
+  window.print();
+}
+</script>
+
+<script>
+document.addEventListener('DOMContentLoaded', function(){
+  const form = document.getElementById('filterForm');
+  if (!form) return;
+
+  const typeSel = form.querySelector('select[name="type"]'); // preserved
+  const fromI = form.querySelector('input[name="from"]');
+  const toI   = form.querySelector('input[name="to"]');
+  const qBtns = form.querySelectorAll('[data-range]');
+
+  // Helpers (local dates)
+  const pad = n => String(n).padStart(2,'0');
+  const fmt = d => `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`;
+  const parseISO = s => {
+    if (!s) return null;
+    const [y,m,d] = s.split('-').map(Number);
+    return new Date(y, m-1, d);
+  };
+  const today = (() => { const n=new Date(); return new Date(n.getFullYear(), n.getMonth(), n.getDate()); })();
+  const start7d = new Date(today.getFullYear(), today.getMonth(), today.getDate() - 6);
+  const monthStart = new Date(today.getFullYear(), today.getMonth(), 1);
+  const monthEnd   = new Date(today.getFullYear(), today.getMonth()+1, 0);
+
+  // UI helpers
+  const clearActive = () => qBtns.forEach(b => { b.classList.remove('active'); b.setAttribute('aria-pressed','false'); });
+  const setActive   = (btn) => { clearActive(); if (btn) { btn.classList.add('active'); btn.setAttribute('aria-pressed','true'); } };
+  const syncMinMax  = () => {
+    if (!fromI || !toI) return;
+    toI.min   = fromI.value || '';
+    fromI.max = toI.value   || '';
+  };
+
+  // Infer active from current inputs
+  (function inferActive(){
+    const f = parseISO(fromI?.value);
+    const t = parseISO(toI?.value);
+    if (!f || !t) { clearActive(); return; }
+    const fISO = fmt(f), tISO = fmt(t);
+    if (fISO === fmt(today) && tISO === fmt(today)) {
+      setActive(form.querySelector('[data-range="today"]')); return;
+    }
+    if (fISO === fmt(start7d) && tISO === fmt(today)) {
+      setActive(form.querySelector('[data-range="7d"]')); return;
+    }
+    if (fISO === fmt(monthStart) && tISO === fmt(monthEnd)) {
+      setActive(form.querySelector('[data-range="month"]')); return;
+    }
+    clearActive();
+  })();
+
+  syncMinMax();
+
+  // Compute ranges
+  function applyRange(kind) {
+    let s = new Date(today), e = new Date(today);
+    if (kind === '7d') { s = start7d; e = today; }
+    else if (kind === 'month') { s = monthStart; e = monthEnd; }
+    // 'today' stays today
+    if (fromI) fromI.value = fmt(s);
+    if (toI)   toI.value   = fmt(e);
+    syncMinMax();
+  }
+
+  // Quick range clicks: set dates, mark active, submit
+  qBtns.forEach(btn => {
+    btn.addEventListener('click', () => {
+      applyRange(btn.getAttribute('data-range'));
+      setActive(btn);
+      form.submit();
+    });
+  });
+
+  // Manual date edits: keep constraints, clear quick-range active (NO auto-submit)
+  const onDateChange = () => {
+    if (fromI?.value && toI?.value && toI.value < fromI.value) {
+      toI.value = fromI.value;
+    }
+    syncMinMax();
+    clearActive();
+  };
+  fromI?.addEventListener('input', onDateChange);
+  toI?.addEventListener('input', onDateChange);
+
+  // Ensure clean GET on submit (avoid stale query string remnants)
+  form.setAttribute('action', window.location.pathname);
+});
+</script>
+
+
+{% endblock %}

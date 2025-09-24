@@ -1,0 +1,48 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    {% include "includes/adminheader.html" %}
+    <title>DLapp </title>
+  </head>
+  <body> 
+
+    <div class="tap-top"><i data-feather="chevrons-up"></i></div>
+
+    <div class="page-wrapper compact-wrapper" id="pageWrapper">
+
+      {% include "includes/page_header.html" %}
+
+      <div class="page-body-wrapper"> 
+        {% include "includes/sidebar.html" %}
+
+        <div class="page-body">
+          <div class="container-fluid">
+            <div class="page-title"> 
+              <div class="row">
+              </div>
+            </div>
+          </div>
+
+          {% block content %}
+          
+          {% endblock %}
+
+          {% comment %} 
+          <div class="container-fluid default-dashboard"> 
+            <div class="row">
+                <!-- Contents starts-->
+
+            </div>
+          </div> 
+          {% endcomment %}
+            
+        </div>
+        
+        {% include "includes/footer.html" %}
+      </div>
+    </div>
+
+    {% include "includes/adminscripts.html" %}
+  </body>
+</html>

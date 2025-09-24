@@ -1,0 +1,168 @@
+{% extends 'base.html' %}
+{% block content %}
+
+<div class="container-fluid default-dashboard">
+  <div class="row">
+
+    <!-- Header -->
+    <div class="col-12 project-list">
+      <div class="card">
+          <div class="row align-items-center">
+              <div class="col-6 p-0">
+                  <ul class="nav nav-tabs border-tab d-flex" role="tablist">
+                      <li class="nav-item">
+                          <a class="nav-link active" href="#" role="tab" aria-selected="true">
+                              <i class="fa fa-cubes me-2"></i>Pharmacy • New Stock Transaction
+                          </a>
+                      </li>
+                  </ul>
+              </div>
+              <div class="col-6 p-0 d-flex justify-content-end align-items-center">
+                  <a class="btn btn-outline-secondary" href="{% url 'pharmacy_tx_list' %}">
+                      <i class="fa fa-arrow-left me-2"></i>Back to Transactions
+                  </a>
+              </div>
+          </div>
+      </div>
+    ww</div>
+
+    <!-- Form -->
+    <div class="col-md-12">
+      <form method="post" novalidate class="d-print-none">
+        {% csrf_token %}
+
+        {% if form.non_field_errors %}
+          <div class="alert alert-danger mb-3">
+            {{ form.non_field_errors }}
+          </div>
+        {% endif %}
+
+        <div class="card shadow-sm">
+          <div class="card-body">
+            <h6 class="text-muted mb-3"><i class="fa fa-info-circle me-1"></i>Transaction Details</h6>
+
+            <div class="row g-3">
+              <div class="col-md-6">
+                <label class="form-label" for="{{ form.medicine.id_for_label }}">Medicine</label>
+                {{ form.medicine }}
+                {% if form.medicine.errors %}<div class="invalid-feedback d-block">{{ form.medicine.errors|join:", " }}</div>{% endif %}
+              </div>
+
+              <div class="col-md-3">
+                <label class="form-label" for="{{ form.transaction_type.id_for_label }}">Type</label>
+                {{ form.transaction_type }}
+                {% if form.transaction_type.errors %}<div class="invalid-feedback d-block">{{ form.transaction_type.errors|join:", " }}</div>{% endif %}
+              </div>
+
+              <div class="col-md-3">
+                <label class="form-label" for="{{ form.quantity.id_for_label }}">Quantity</label>
+                {{ form.quantity }}
+                <div class="form-text" id="qty-hint">Positive for incoming, negative for outgoing.</div>
+                {% if form.quantity.errors %}<div class="invalid-feedback d-block">{{ form.quantity.errors|join:", " }}</div>{% endif %}
+              </div>
+
+              <div class="col-md-3">
+                <label class="form-label" for="{{ form.unit_price.id_for_label }}">Unit Price (₹)</label>
+                {{ form.unit_price }}
+                {% if form.unit_price.errors %}<div class="invalid-feedback d-block">{{ form.unit_price.errors|join:", " }}</div>{% endif %}
+              </div>
+            </div>
+
+            <hr class="my-4">
+
+            <h6 class="text-muted mb-3"><i class="fa fa-barcode me-1"></i>Reference</h6>
+            <div class="row g-3">
+              <div class="col-md-3">
+                <label class="form-label" for="{{ form.batch_number.id_for_label }}">Batch</label>
+                {{ form.batch_number }}
+                {% if form.batch_number.errors %}<div class="invalid-feedback d-block">{{ form.batch_number.errors|join:", " }}</div>{% endif %}
+              </div>
+              <div class="col-md-3">
+                <label class="form-label" for="{{ form.expiry_date.id_for_label }}">Expiry</label>
+                {{ form.expiry_date }}
+                {% if form.expiry_date.errors %}<div class="invalid-feedback d-block">{{ form.expiry_date.errors|join:", " }}</div>{% endif %}
+              </div>
+              <div class="col-md-3">
+                <label class="form-label" for="{{ form.supplier.id_for_label }}">Supplier</label>
+                {{ form.supplier }}
+                {% if form.supplier.errors %}<div class="invalid-feedback d-block">{{ form.supplier.errors|join:", " }}</div>{% endif %}
+              </div>
+              <div class="col-md-3">
+                <label class="form-label" for="{{ form.reference_number.id_for_label }}">Reference #</label>
+                {{ form.reference_number }}
+                {% if form.reference_number.errors %}<div class="invalid-feedback d-block">{{ form.reference_number.errors|join:", " }}</div>{% endif %}
+              </div>
+            </div>
+
+            <hr class="my-4">
+
+            <h6 class="text-muted mb-3"><i class="fa fa-user me-1"></i>Optional</h6>
+            <div class="row g-3">
+            
+              <div class="col-md-8">
+                <label class="form-label" for="{{ form.notes.id_for_label }}">Notes</label>
+                {{ form.notes }}
+                {% if form.notes.errors %}<div class="invalid-feedback d-block">{{ form.notes.errors|join:", " }}</div>{% endif %}
+              </div>
+            </div>
+          </div>
+
+          <div class="card-footer d-flex justify-content-end gap-2">
+            <a class="btn btn-light" href="{% url 'pharmacy_tx_list' %}">
+              <i class="fa fa-ban me-1"></i>Cancel
+            </a>
+            <button class="btn btn-primary">
+              <i class="fa fa-save me-1"></i>Save Transaction
+            </button>
+          </div>
+        </div>
+      </form>
+
+      <p class="text-muted mt-2">
+        <i class="fa fa-info-circle me-1"></i>
+        Positive quantity = incoming (purchase/return-in). Negative = outgoing (sale/damaged/expired).
+      </p>
+    </div>
+  </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function(){
+  // add bootstrap classes if not already present
+  document.querySelectorAll('select').forEach(s => s.classList.add('form-select'));
+  document.querySelectorAll('input[type="text"], input[type="number"], input[type="date"], textarea')
+    .forEach(i => i.classList.add('form-control'));
+
+  const typeSel = document.getElementById('{{ form.transaction_type.id_for_label }}') ||
+                  document.querySelector('[name="{{ form.transaction_type.html_name }}"]');
+  const qtyInput = document.getElementById('{{ form.quantity.id_for_label }}') ||
+                   document.querySelector('[name="{{ form.quantity.html_name }}"]');
+  const hint = document.getElementById('qty-hint');
+
+  const NEG_TYPES = ['sale','damaged','expired','return_out','issue'];  // adjust to your choices
+  const POS_TYPES = ['purchase','return_in','correction_plus','adjust_in']; // adjust to your choices
+
+  function normalizeQty(){
+    if (!typeSel || !qtyInput) return;
+    const t = (typeSel.value || '').toLowerCase();
+    let v = parseFloat(qtyInput.value || '0');
+    if (isNaN(v)) v = 0;
+
+    if (NEG_TYPES.includes(t)) {
+      if (v > 0) qtyInput.value = (-v).toString();
+      hint.textContent = 'Outgoing stock: quantity should be negative.';
+    } else if (POS_TYPES.includes(t)) {
+      if (v < 0) qtyInput.value = Math.abs(v).toString();
+      hint.textContent = 'Incoming stock: quantity should be positive.';
+    } else {
+      hint.textContent = 'Positive for incoming, negative for outgoing.';
+    }
+  }
+
+  typeSel && typeSel.addEventListener('change', normalizeQty);
+  qtyInput && qtyInput.addEventListener('blur', normalizeQty);
+  normalizeQty();
+});
+</script>
+
+{% endblock %}

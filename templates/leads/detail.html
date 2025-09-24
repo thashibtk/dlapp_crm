@@ -1,0 +1,156 @@
+{% extends 'base.html' %}
+{% block content %}
+
+<div class="container-fluid default-dashboard">
+  <div class="row">
+
+    <!-- Header -->
+    <div class="col-12 project-list">
+      <div class="card">
+          <div class="row align-items-center">
+              <div class="col-7 p-0">
+                  <ul class="nav nav-tabs border-tab d-flex" role="tablist">
+                      <li class="nav-item">
+                          <a class="nav-link active" href="#" role="tab" aria-selected="true">
+                              <i class="fa fa-user me-2"></i>Lead
+                          </a>
+                      </li>
+                      <li class="nav-item d-flex align-items-center">
+                          <span class="ms-3 h6 mb-0">{{ lead.name }}</span>
+                          {% if lead.converted_patient %}
+                          <span class="badge text-bg-success ms-2"><i class="fa fa-check me-1"></i>Converted</span>
+                          {% else %}
+                          <span class="badge text-bg-warning text-dark ms-2"><i class="fa fa-hourglass-half me-1"></i>Open</span>
+                          {% endif %}
+                      </li>
+                  </ul>
+              </div>
+              <div class="col-5 p-0 d-flex justify-content-end align-items-center gap-2">
+                  <a class="btn btn-outline-secondary" href="{% url 'lead_update' lead.pk %}">
+                      <i class="fa fa-pencil me-2"></i>Edit
+                  </a>
+                  {% if not lead.converted_patient %}
+                  <a class="btn btn-primary" href="{% url 'lead_convert' lead.pk %}">
+                      <i class="fa fa-user-plus me-2"></i>Convert to Patient
+                  </a>
+                  {% else %}
+                  <a class="btn btn-outline-primary" href="{% url 'patient_detail' lead.converted_patient.pk %}">
+                      <i class="fa fa-id-card me-2"></i>View Patient
+                  </a>
+                  {% endif %}
+              </div>
+          </div>
+      </div>
+    </div>
+
+    <!-- Two-column content -->
+    <div class="col-md-6">
+      <div class="card p-3 h-100">
+        <h6 class="text-muted mb-3"><i class="fa fa-address-card me-1"></i>Contact</h6>
+        <div class="row g-2">
+          <div class="col-6">
+            <div class="small text-muted">Name</div>
+            <div>{{ lead.name }}</div>
+          </div>
+          <div class="col-6">
+            <div class="small text-muted">Phone</div>
+            <div><a class="text-decoration-none" href="tel:{{ lead.phone_number }}">{{ lead.phone_number }}</a></div>
+          </div>
+          <div class="col-6">
+            <div class="small text-muted">Email</div>
+            <div>
+              {% if lead.email %}
+                <a class="text-decoration-none" href="mailto:{{ lead.email }}">{{ lead.email }}</a>
+              {% else %}
+                <span class="text-muted">—</span>
+              {% endif %}
+            </div>
+          </div>
+          <div class="col-6">
+            <div class="small text-muted">Age</div>
+            <div>{{ lead.age|default:"—" }}</div>
+          </div>
+          <div class="col-6">
+            <div class="small text-muted">Location</div>
+            <div>{{ lead.location|default:"—" }}</div>
+          </div>
+
+          <div class="col-6">
+            <span class="text-muted small"><i class="fa fa-flag me-1"></i>Priority</span>
+            {% if lead.priority == 'high' %}
+              <span class="badge text-bg-danger">High</span>
+            {% elif lead.priority == 'medium' %}
+              <span class="badge text-bg-warning text-dark">Medium</span>
+            {% elif lead.priority == 'low' %}
+              <span class="badge text-bg-secondary">Low</span>
+            {% else %}
+              <span class="badge text-bg-light text-muted">{{ lead.get_priority_display }}</span>
+            {% endif %}
+          </div>
+        </div>
+
+        <hr class="my-3">
+
+        <h6 class="text-muted mb-2"><i class="fa fa-sticky-note me-1"></i>Notes</h6>
+        <div class="mb-2">
+          <div>{{ lead.notes|linebreaksbr }}</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="col-md-6">
+      <div class="card p-3 h-100">
+        <h6 class="text-muted mb-3"><i class="fa fa-info-circle me-1"></i>Meta</h6>
+        <div class="row g-2">
+          <div class="col-6">
+            <div class="small text-muted">Source</div>
+            <div>{% if lead.lead_source %}{{ lead.lead_source.name }}{% else %}—{% endif %}</div>
+          </div>
+          <div class="col-6">
+            <div class="small text-muted">Status</div>
+            <div>
+              {% if lead.converted_patient %}
+                <span class="badge text-bg-success"><i class="fa fa-check me-1"></i>Converted</span>
+              {% else %}
+                <span class="badge text-bg-warning text-dark"><i class="fa fa-hourglass-half me-1"></i>Open</span>
+              {% endif %}
+            </div>
+          </div>
+          <div class="col-6">
+            <div class="small text-muted">Last Contact</div>
+            <div>{{ lead.last_contact_date|date:"Y-m-d H:i" }}</div>
+          </div>
+          <div class="col-6">
+            <div class="small text-muted">Next Follow-up</div>
+            <div>{{ lead.next_followup_date|date:"Y-m-d H:i" }}</div>
+          </div>
+        </div>
+
+        <hr class="my-3">
+
+        <h6 class="text-muted mb-2"><i class="fa fa-bolt me-1"></i>Quick Actions</h6>
+        <div class="d-flex flex-wrap gap-2">
+          <a class="btn btn-sm btn-outline-primary" href="tel:{{ lead.phone_number }}"><i class="fa fa-phone me-1"></i>Call</a>
+          {% if lead.email %}
+            <a class="btn btn-sm btn-outline-primary" href="mailto:{{ lead.email }}"><i class="fa fa-envelope me-1"></i>Email</a>
+          {% endif %}
+          <a class="btn btn-sm btn-outline-secondary" href="{% url 'lead_update' lead.pk %}"><i class="fa fa-pencil me-1"></i>Edit</a>
+          {% if not lead.converted_patient %}
+            <a class="btn btn-sm btn-primary" href="{% url 'lead_convert' lead.pk %}"><i class="fa fa-user-plus me-1"></i>Convert</a>
+          {% else %}
+            <a class="btn btn-sm btn-outline-success" href="{% url 'appointment_create' %}?patient={{ lead.converted_patient.pk }}"><i class="fa fa-calendar-plus-o me-1"></i>New Appointment</a>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+
+
+  </div>
+</div>
+
+<style>
+  .vr { width:1px; min-height:1.25rem; background:rgba(0,0,0,.08); }
+  .kpi { font-weight:600; }
+</style>
+
+{% endblock %}

@@ -1,0 +1,694 @@
+{% extends 'base.html' %}
+{% load roles %}
+{% block content %}
+
+<div class="container-fluid default-dashboard">
+  <div class="row">
+
+    <!-- Header -->
+    <div class="col-12 project-list">
+      <div class="card">
+        <div class="row align-items-center">
+          <div class="col-12 col-md-6 p-0">
+            <ul
+              class="nav nav-tabs border-tab d-flex"
+              id="top-tab"
+              role="tablist"
+            >
+              <li class="nav-item">
+                <a
+                  class="nav-link active"
+                  id="top-all-collections-tab"
+                  href=""
+                  role="tab"
+                  aria-controls="top-home"
+                  aria-selected="true"
+                >
+                  <i data-feather="target"></i>
+                  <span class="d-none d-sm-inline">Patient: </span>{{ patient.name }} 
+                  <small class="text-muted d-block d-sm-inline">({{ patient.file_number }})</small>
+                </a>
+              </li>
+            </ul>
+          </div>
+          <div class="col-12 col-md-6 p-0 text-end mt-2 mt-md-0">
+            <div class="form-group mb-0 me-0"></div>
+            <a class="btn btn-outline-secondary" href="{% url 'patient_list' %}">
+              <i class="fa fa-arrow-left me-2"></i>Back
+            </a>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Modern Responsive Tabs -->
+    <div class="col-12">
+      <div class="card">
+        <div class="card-body">
+          <!-- Mobile Tab Dropdown (visible on small screens) -->
+          <div class="d-block d-lg-none mb-3">
+            <select class="form-select" id="mobile-tab-selector" onchange="switchTab(this.value)">
+              <option value="overview">Overview</option>
+              <option value="history">Medical History</option>
+              <option value="consultations">Consultations</option>
+              <option value="followups">Follow-ups</option>
+              <option value="billing">Billing</option>
+              <option value="photos">Photos</option>
+            </select>
+          </div>
+
+          <!-- Desktop Tabs (hidden on small screens) -->
+          <ul class="nav nav-tabs mb-3 d-none d-lg-flex" role="tablist" id="desktop-tabs">
+            <li class="nav-item">
+              <a class="nav-link active" data-bs-toggle="tab" href="#overview" id="overview-tab">
+                <i class="fa fa-user me-1"></i>Overview
+              </a>
+            </li>
+            <li class="nav-item">
+              <a class="nav-link" data-bs-toggle="tab" href="#history" id="history-tab">
+                <i class="fa fa-history me-1"></i>
+                <span class="d-none d-xl-inline">Medical </span>History
+              </a>
+            </li>
+            <li class="nav-item">
+              <a class="nav-link" data-bs-toggle="tab" href="#consultations" id="consultations-tab">
+                <i class="fa fa-stethoscope me-1"></i>Consultations
+              </a>
+            </li>
+            <li class="nav-item">
+              <a class="nav-link" data-bs-toggle="tab" href="#followups" id="followups-tab">
+                <i class="fa fa-calendar-check me-1"></i>Follow-ups
+              </a>
+            </li>
+            <li class="nav-item">
+              <a class="nav-link" data-bs-toggle="tab" href="#billing" id="billing-tab">
+                <i class="fa fa-receipt me-1"></i>Billing
+              </a>
+            </li>
+            <li class="nav-item">
+              <a class="nav-link" data-bs-toggle="tab" href="#photos" id="photos-tab">
+                <i class="fa fa-images me-1"></i>Photos
+              </a>
+            </li>
+          </ul>
+
+          <div class="tab-content">
+            <!-- Overview -->
+            <div class="tab-pane fade show active" id="overview">
+              <div class="d-flex flex-column flex-sm-row justify-content-between align-items-start align-items-sm-center mb-3 gap-2">
+                <h6 class="mb-0">Overview</h6>
+           
+                  <a class="btn btn-sm btn-outline-secondary d-print-none" href="{% url 'patient_update' pk=patient.pk %}">
+                    <i class="fa fa-pencil me-1"></i>Edit Details
+                  </a>
+              </div>
+
+              <div class="row g-3">
+                <div class="col-12 col-lg-6">
+                  <div class="card h-100">
+                    <div class="card-body">
+                      <h6 class="text-muted mb-3">
+                        <i class="fa fa-user me-1"></i>Patient Details
+                      </h6>
+                      <div class="row row-cols-1 row-cols-sm-2 g-3">
+                        <div class="col">
+                          <div class="d-flex align-items-center">
+                            <i class="fa fa-birthday-cake text-muted me-2"></i>
+                            <div>
+                              <small class="text-muted d-block">Age</small>
+                              <strong>{{ patient.age }}</strong>
+                            </div>
+                          </div>
+                        </div>
+                        <div class="col">
+                          <div class="d-flex align-items-center">
+                            <i class="fa fa-calendar text-muted me-2"></i>
+                            <div>
+                              <small class="text-muted d-block">DOB</small>
+                              <strong>{{ patient.date_of_birth | date:"d M, Y" }}</strong>
+                            </div>
+                          </div>
+                        </div>
+                        <div class="col">
+                          <div class="d-flex align-items-center">
+                            <i class="fa fa-venus-mars text-muted me-2"></i>
+                            <div>
+                              <small class="text-muted d-block">Gender</small>
+                              <strong>{{ patient.get_gender_display }}</strong>
+                            </div>
+                          </div>
+                        </div>
+                        <div class="col">
+                          <div class="d-flex align-items-center">
+                            <i class="fa fa-phone text-muted me-2"></i>
+                            <div>
+                              <small class="text-muted d-block">Phone</small>
+                              <strong>{{ patient.phone_number }}</strong>
+                            </div>
+                          </div>
+                        </div>
+                        <div class="col-12">
+                          <div class="d-flex align-items-center">
+                            <i class="fa fa-envelope text-muted me-2"></i>
+                            <div>
+                              <small class="text-muted d-block">Email</small>
+                              <strong>{{ patient.email|default:'—' }}</strong>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+                <div class="col-12 col-lg-6">
+                  <div class="card h-100">
+                    <div class="card-body">
+                      <h6 class="text-muted mb-3">
+                        <i class="fa fa-map me-1"></i>Address & Billing
+                      </h6>
+                      <div class="mb-3">
+                        <small class="text-muted d-block">Address</small>
+                        <div class="fw-medium">{{ patient.address }}</div>
+                        <div>{{ patient.city }}, {{ patient.state }} - {{ patient.pincode }}</div>
+                      </div>
+                      <div class="border-top pt-3 mb-2">
+                        <small class="text-muted d-block">Total Billed</small>
+                        <div class="h5 text-success mb-0">₹ {{ billing_summary.total_billed }}</div>
+                      </div>
+                      <div class="border-top pt-3">
+                        <small class="text-muted d-block">Balance</small>
+                        <div class="h5 text-danger mb-0">₹ {{ patient.balance }}</div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <div class="col-12">
+                  <div class="card h-100">
+                    <div class="card-body">
+                      <div class="d-flex justify-content-between align-items-center mb-2">
+                        <h6 class="text-muted mb-0"><i class="fa fa-calendar me-1"></i>Appointments</h6>
+                        <a class="btn btn-sm btn-outline-primary d-print-none" href="{% url 'appointment_create' %}?patient={{ patient.pk }}">
+                          <i class="fa fa-plus me-1"></i>New Appointment
+                        </a>
+                      </div>
+
+                      <div class="table-responsive">
+                        <table class="table table-sm align-middle mb-0">
+                          <thead class="table-light">
+                            <tr>
+                              <th class="text-nowrap">Date</th>
+                              <th>Doctor</th>
+                              {% if appointments and appointments.0.sittings %}<th class="text-nowrap">Sitting</th>{% endif %}
+                              <th class="text-nowrap">Status</th>
+                              <th class="text-nowrap d-print-none">Action</th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {% for a in appointments|slice:":10" %}
+                              <tr>
+                                <td class="text-nowrap">{{ a.appointment_date|date:"Y-m-d H:i" }}</td>
+                                <td class="text-nowrap">
+                                  {% if a.assigned_doctor %}
+                                    {{ a.assigned_doctor.get_full_name|default:a.assigned_doctor.username }}
+                                  {% else %}&mdash;{% endif %}
+                                </td>
+                                {% if a.sittings %}
+                                  <td class="text-nowrap">{{ a.get_sittings_display }}</td>
+                                {% endif %}
+                                <td class="text-nowrap">
+                                  {% if a.status == 'scheduled' %}
+                                    <span class="badge text-bg-secondary"><i class="fa fa-clock-o me-1"></i>Scheduled</span>
+                                  {% elif a.status == 'confirmed' %}
+                                    <span class="badge text-bg-info"><i class="fa fa-check me-1"></i>Confirmed</span>
+                                  {% elif a.status == 'completed' %}
+                                    <span class="badge text-bg-success"><i class="fa fa-check-circle me-1"></i>Completed</span>
+                                  {% elif a.status == 'cancelled' %}
+                                    <span class="badge text-bg-danger"><i class="fa fa-times-circle me-1"></i>Cancelled</span>
+                                  {% elif a.status == 'no_show' %}
+                                    <span class="badge text-bg-warning text-dark"><i class="fa fa-exclamation-triangle me-1"></i>No Show</span>
+                                  {% else %}
+                                    <span class="badge text-bg-light text-muted">{{ a.get_status_display }}</span>
+                                  {% endif %}
+                                </td>
+                                <td class="text-nowrap d-print-none">
+                                  <a class="btn btn-sm btn-outline-secondary" href="{% url 'appointment_detail' a.pk %}">
+                                    <i class="fa fa-eye me-1"></i>View
+                                  </a>
+                                </td>
+                              </tr>
+                            {% empty %}
+                              <tr>
+                                <td colspan="5" class="text-center text-muted py-3">
+                                  <i class="fa fa-info-circle me-1"></i>No appointments yet.
+                                  <a class="ms-2" href="{% url 'appointment_create' %}?patient={{ patient.pk }}">Create one</a>
+                                </td>
+                              </tr>
+                            {% endfor %}
+                          </tbody>
+                        </table>
+                      </div>
+
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Medical History -->
+            <div class="tab-pane fade" id="history">
+              <div class="d-flex flex-column flex-sm-row justify-content-between align-items-start align-items-sm-center mb-3 gap-2">
+                <h6 class="mb-0">Medical History</h6>
+                {% if history %}
+                  <a class="btn btn-sm btn-outline-secondary d-print-none" href="{% url 'medical_history_update' patient_id=patient.pk %}">
+                    <i class="fa fa-pencil me-1"></i>Edit
+                  </a>
+                {% else %}
+                  <a class="btn btn-sm btn-primary d-print-none" href="{% url 'medical_history_create' patient_id=patient.pk %}">
+                    <i class="fa fa-plus me-1"></i>Add
+                  </a>
+                {% endif %}
+              </div>
+              {% if history %}
+                <div class="card">
+                  <div class="card-body">
+                    <div class="row g-3">
+                      <div class="col-12 col-md-6 col-lg-4">
+                        <div class="p-3 border rounded">
+                          <div class="d-flex justify-content-between align-items-center mb-2">
+                            <strong>Hypertension</strong>
+                            <span class="badge {{ history.hypertension|yesno:'bg-danger,bg-success' }}">
+                              {{ history.hypertension|yesno:"Yes,No" }}
+                            </span>
+                          </div>
+                          <small class="text-muted">Family: {{ history.hypertension_family|yesno:"Yes,No" }}</small>
+                        </div>
+                      </div>
+                      <div class="col-12 col-md-6 col-lg-4">
+                        <div class="p-3 border rounded">
+                          <div class="d-flex justify-content-between align-items-center mb-2">
+                            <strong>Diabetes</strong>
+                            <span class="badge {{ history.diabetes|yesno:'bg-danger,bg-success' }}">
+                              {{ history.diabetes|yesno:"Yes,No" }}
+                            </span>
+                          </div>
+                          <small class="text-muted">Family: {{ history.diabetes_family|yesno:"Yes,No" }}</small>
+                        </div>
+                      </div>
+                      <div class="col-12 col-md-6 col-lg-4">
+                        <div class="p-3 border rounded">
+                          <div class="d-flex justify-content-between align-items-center mb-2">
+                            <strong>Thyroid</strong>
+                            <span class="badge {{ history.thyroid_disorder|yesno:'bg-danger,bg-success' }}">
+                              {{ history.thyroid_disorder|yesno:"Yes,No" }}
+                            </span>
+                          </div>
+                          <small class="text-muted">Family: {{ history.thyroid_disorder_family|yesno:"Yes,No" }}</small>
+                        </div>
+                      </div>
+                      <div class="col-12 col-md-6 col-lg-4">
+                        <div class="p-3 border rounded">
+                          <div class="d-flex justify-content-between align-items-center mb-2">
+                            <strong>Autoimmune</strong>
+                            <span class="badge {{ history.autoimmune_disease|yesno:'bg-danger,bg-success' }}">
+                              {{ history.autoimmune_disease|yesno:"Yes,No" }}
+                            </span>
+                          </div>
+                          <small class="text-muted">Family: {{ history.autoimmune_disease_family|yesno:"Yes,No" }}</small>
+                        </div>
+                      </div>
+                      <div class="col-12 col-md-6 col-lg-4">
+                        <div class="p-3 border rounded">
+                          <div class="d-flex justify-content-between align-items-center mb-2">
+                            <strong>Allergies</strong>
+                            <span class="badge {{ history.allergies|yesno:'bg-danger,bg-success' }}">
+                              {{ history.allergies|yesno:"Yes,No" }}
+                            </span>
+                          </div>
+                          <small class="text-muted">Family: {{ history.allergies_family|yesno:"Yes,No" }}</small>
+                        </div>
+                      </div>
+                    </div>
+                    <hr class="my-4">
+                    <div class="row g-3">
+                      <div class="col-12 col-md-6">
+                        <strong class="text-muted">Allergy Details:</strong>
+                        <p class="mb-0">{{ history.allergy_details|default:"—" }}</p>
+                      </div>
+                      <div class="col-12 col-md-6">
+                        <strong class="text-muted">Current Medications:</strong>
+                        <p class="mb-0">{{ history.current_medications|default:"—" }}</p>
+                      </div>
+                      <div class="col-12 col-md-6">
+                        <strong class="text-muted">Surgical History:</strong>
+                        <p class="mb-0">{{ history.surgical_history|default:"—" }}</p>
+                      </div>
+                      <div class="col-12 col-md-6">
+                        <strong class="text-muted">Other Conditions:</strong>
+                        <p class="mb-0">{{ history.other_conditions|default:"—" }}</p>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              {% else %}
+                <div class="alert bg-light text-muted ">
+                  <i class="fa fa-info-circle me-2"></i>No medical history added yet.
+                </div>
+              {% endif %}
+            </div>
+
+            <!-- Consultations -->
+            <div class="tab-pane fade" id="consultations">
+              <div class="d-flex flex-column flex-sm-row justify-content-between align-items-start align-items-sm-center mb-3 gap-2">
+                <h6 class="mb-0">Consultations</h6>
+                {% if request.user|in_group:"Doctor" or request.user|in_group:"OperationsManager" %}
+                  <a class="btn btn-sm btn-primary d-print-none" href="{% url 'consultation_create' patient_id=patient.pk %}">
+                    <i class="fa fa-plus me-1"></i>New Consultation
+                  </a>
+                {% endif %}
+              </div>
+              <div class="card">
+                <div class="table-responsive">
+                  <table class="table table-hover mb-0 align-middle">
+                    <thead class="table-light">
+                      <tr>
+                        <th>Date</th>
+                        <th>Doctor</th>
+                        <th class="d-none d-md-table-cell">Scalp</th>
+                        <th class="d-none d-md-table-cell">Pull Test</th>
+                        <th class="text-nowrap">Actions</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                    {% for c in consultations %}
+                      <tr>
+                        <td>
+                          <a href="{% url 'consultation_detail' pk=c.pk %}" class="text-decoration-none">
+                            <div class="fw-medium">{{ c.consultation_date|date:"M d, Y" }}</div>
+                            <small class="text-muted">{{ c.consultation_date|date:"H:i" }}</small>
+                          </a>
+                        </td>
+                        <td>
+                          {% if c.doctor %}
+                            <div class="fw-medium">{{ c.doctor.get_full_name|default:c.doctor.username }}</div>
+                          {% else %}
+                            <span class="text-muted">&mdash;</span>
+                          {% endif %}
+                        </td>
+                        <td class="d-none d-md-table-cell">
+                          <span class="badge bg-light text-dark">{{ c.get_scalp_condition_display|default:"—" }}</span>
+                        </td>
+                        <td class="d-none d-md-table-cell">
+                          <span class="badge bg-light text-dark">{{ c.get_pull_test_display|default:"—" }}</span>
+                        </td>
+                        <td>
+                          <div class="btn-group" role="group">
+                            <a class="btn btn-sm btn-outline-secondary" href="{% url 'consultation_detail' pk=c.pk %}">
+                              <i class="fa fa-eye d-md-none"></i>
+                              <span class="d-none d-md-inline">View</span>
+                            </a>
+                            {% if c.treatment_plan %}
+                              <a class="btn btn-sm btn-outline-secondary" href="{% url 'treatment_plan_update' pk=c.pk %}">
+                                <i class="fa fa-pencil d-md-none"></i>
+                                <span class="d-none d-md-inline">Edit Plan</span>
+                              </a>
+                            {% else %}
+                              {% if request.user|in_group:"Doctor" or request.user|in_group:"OperationsManager" %}
+                                <a class="btn btn-sm btn-outline-primary" href="{% url 'treatment_plan_create' pk=c.pk %}">
+                                  <i class="fa fa-plus d-md-none"></i>
+                                  <span class="d-none d-md-inline">Create Plan</span>
+                                </a>
+                              {% endif %}
+                            {% endif %}
+                          </div>
+                        </td>
+                      </tr>
+                    {% empty %}
+                      <tr>
+                        <td colspan="5" class="text-center text-muted py-4">
+                          <i class="fa fa-stethoscope fa-2x mb-2 d-block"></i>
+                          No consultations found.
+                        </td>
+                      </tr>
+                    {% endfor %}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            </div>
+
+            <!-- Follow-ups -->
+            <div class="tab-pane fade" id="followups">
+              <div class="d-flex flex-column flex-sm-row justify-content-between align-items-start align-items-sm-center mb-3 gap-2">
+                <h6 class="mb-0">Follow-ups</h6>
+                {% if request.user|in_group:"Doctor" or request.user|in_group:"OperationsManager" %}
+                  <a class="btn btn-sm btn-primary d-print-none" href="{% url 'followup_create' patient_id=patient.pk %}">
+                    <i class="fa fa-plus me-1"></i>New Follow-up
+                  </a>
+                {% endif %}
+              </div>
+              <div class="card">
+                <div class="table-responsive">
+                  <table class="table table-hover mb-0 align-middle">
+                    <thead class="table-light">
+                      <tr>
+                        <th>Date</th>
+                        <th>Response %</th>
+                        <th class="d-none d-md-table-cell">Satisfaction</th>
+                        <th class="d-none d-lg-table-cell">Next Follow-up</th>
+                        {% if request.user|in_group:"Doctor" or request.user|in_group:"OperationsManager" %}
+                        <th>Actions</th>
+                        {% endif %}
+                      </tr>
+                    </thead>
+                    <tbody>
+                    {% for f in followups %}
+                      <tr>
+                        <td>
+                          <div class="fw-medium">{{ f.followup_date|date:"M d, Y" }}</div>
+                        </td>
+                        <td>
+                          <div class="progress" style="height: 20px; width: 100px;">
+                            <div class="progress-bar bg-success" role="progressbar" 
+                                 style="width: {{ f.overall_response_percentage }}%"
+                                 aria-valuenow="{{ f.overall_response_percentage }}" 
+                                 aria-valuemin="0" aria-valuemax="100">
+                              {{ f.overall_response_percentage }}%
+                            </div>
+                          </div>
+                        </td>
+                        <td class="d-none d-md-table-cell">
+                          <div class="d-flex align-items-center">
+                            <span class="me-2">{{ f.patient_satisfaction }}/10</span>
+                          </div>
+                        </td>
+                        <td class="d-none d-lg-table-cell">
+                          {% if f.next_followup_date %}
+                            <div class="fw-medium">{{ f.next_followup_date|date:"M d, Y" }}</div>
+                          {% else %}
+                            <span class="text-muted">—</span>
+                          {% endif %}
+                        </td>
+                        {% if request.user|in_group:"Doctor" or request.user|in_group:"OperationsManager" %}
+                        <td>
+                          <a class="btn btn-sm btn-outline-secondary" href="{% url 'followup_update' pk=f.pk %}">
+                            <i class="fa fa-pencil"></i>
+                            <span class="d-none d-md-inline ms-1">Edit</span>
+                          </a>
+                        </td>
+                        {% endif %}
+                      </tr>
+                    {% empty %}
+                      <tr>
+                        <td colspan="5" class="text-center text-muted py-4">
+                          <i class="fa fa-calendar-check fa-2x mb-2 d-block"></i>
+                          No follow-ups found.
+                        </td>
+                      </tr>
+                    {% endfor %}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            </div>
+
+            <!-- Billing -->
+            <div class="tab-pane fade" id="billing">
+              <div class="d-flex flex-column flex-sm-row justify-content-between align-items-start align-items-sm-center mb-3 gap-2">
+                <h6 class="mb-0">Billing History</h6>
+              </div>
+              <div class="row g-3 mb-3">
+                <div class="col-6 col-lg-6">
+                    <div class="card h-100">
+                        <div class="card-body">
+                            <h6 class="text-muted mb-3">
+                                <i class="fa fa-user me-1"></i>Total Billed
+                            </h6>
+                            <div class="h5 text-success mb-0">₹ {{ billing_summary.total_billed }}</div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-6 col-lg-6">
+                    <div class="card h-100">
+                        <div class="card-body">
+                            <h6 class="text-muted mb-3">
+                                <i class="fa fa-map me-1"></i>Balance
+                            </h6>
+                            <div class="h5 text-danger mb-0">₹ {{ patient.balance }}</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+              <div class="card">
+                <div class="table-responsive">
+                  <table class="table table-hover mb-0 align-middle">
+                    <thead class="table-light">
+                      <tr>
+                        <th>Bill #</th>
+                        <th>Type</th>
+                        <th>Date</th>
+                        <th>Total</th>
+                        <th>Paid</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {% for b in bills %}
+                      <tr>
+                        <td class="fw-medium">{{ b.bill_number }}</td>
+                        <td class="fw-medium">{{ b.bill_type }}</td>
+
+                        <td>
+                          <div>{{ b.bill_date|date:"M d, Y" }}</div>
+                          <small class="text-muted">{{ b.bill_date|date:"H:i" }}</small>
+                        </td>
+                        <td class="fw-bold text-success">₹ {{ b.total_amount }}</td>
+                        <td class="fw-bold text-success">₹ {{ b.paid_amount }}</td>
+       
+                      </tr>
+                      {% empty %}
+                      <tr>
+                        <td colspan="4" class="text-center text-muted py-4">
+                          <i class="fa fa-receipt fa-2x mb-2 d-block"></i>
+                          No bills found.
+                        </td>
+                      </tr>
+                      {% endfor %}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            </div>
+
+            <!-- Photos -->
+            <div class="tab-pane fade" id="photos">
+              <div class="d-flex flex-column flex-sm-row justify-content-between align-items-start align-items-sm-center mb-3 gap-2">
+                <h6 class="mb-0">Progress Photos</h6>
+                <a class="btn btn-sm btn-primary d-print-none" href="{% url 'progress_photo_create' patient_id=patient.pk %}">
+                  <i class="fa fa-plus me-1"></i>Add Photo
+                </a>
+              </div>
+              <div class="row g-3">
+                {% for p in photos %}
+                  <div class="col-6 col-md-4 col-lg-3">
+                    <div class="card h-100 photo-card">
+                      <div class="position-relative">
+                        <img src="{{ p.image.url }}" class="card-img-top" alt="Progress photo" 
+                             style="height: 200px; object-fit: cover;" 
+                             data-bs-toggle="modal" data-bs-target="#photoModal-{{ p.id }}">
+                        <div class="position-absolute top-0 end-0 m-2">
+                          <span class="badge bg-dark bg-opacity-75">{{ p.photo_type }}</span>
+                        </div>
+                      </div>
+                      <div class="card-body">
+                        <div class="small fw-medium">{{ p.taken_date|date:"M d, Y" }}</div>
+                        <div class="small text-muted mt-1">{{ p.notes|default:"No notes" }}</div>
+                      </div>
+                    </div>
+
+                    <!-- Photo Modal -->
+                    <div class="modal fade" id="photoModal-{{ p.id }}" tabindex="-1">
+                      <div class="modal-dialog modal-lg modal-dialog-centered">
+                        <div class="modal-content">
+                          <div class="modal-header">
+                            <h5 class="modal-title">{{ p.photo_type }} - {{ p.taken_date|date:"M d, Y" }}</h5>
+                            <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                          </div>
+                          <div class="modal-body text-center">
+                            <img src="{{ p.image.url }}" class="img-fluid" alt="Progress photo">
+                            {% if p.notes %}
+                              <div class="mt-3">
+                                <strong>Notes:</strong> {{ p.notes }}
+                              </div>
+                            {% endif %}
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                {% empty %}
+                  <div class="col-12">
+                    <div class="alert bg-light font-primary text-center py-5">
+                      <i class="fa fa-images fa-3x mb-3 d-block text-muted"></i>
+                      <h5>No Photos Yet</h5>
+                      <p class="mb-0">Start tracking progress by adding the first photo.</p>
+                    </div>
+                  </div>
+                {% endfor %}
+              </div>
+            </div>
+
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+// Mobile tab switching function
+function switchTab(tabId) {
+  // Hide all tab panes
+  document.querySelectorAll('.tab-pane').forEach(pane => {
+    pane.classList.remove('show', 'active');
+  });
+  
+  // Show selected tab pane
+  const selectedPane = document.getElementById(tabId);
+  if (selectedPane) {
+    selectedPane.classList.add('show', 'active');
+  }
+}
+
+// Initialize responsive behavior
+document.addEventListener('DOMContentLoaded', function() {
+  const mobileSelect = document.getElementById('mobile-tab-selector');
+  const desktopTabs = document.querySelectorAll('#desktop-tabs .nav-link');
+  
+  // Sync mobile select with desktop tabs
+  desktopTabs.forEach(tab => {
+    tab.addEventListener('shown.bs.tab', function(event) {
+      const targetId = event.target.getAttribute('href').substring(1);
+      mobileSelect.value = targetId;
+    });
+  });
+  
+  // Handle window resize
+  function handleResize() {
+    const isMobile = window.innerWidth < 992; // lg breakpoint
+    if (isMobile) {
+      // Update mobile select to match active tab
+      const activeTab = document.querySelector('#desktop-tabs .nav-link.active');
+      if (activeTab) {
+        const targetId = activeTab.getAttribute('href').substring(1);
+        mobileSelect.value = targetId;
+      }
+    }
+  }
+  
+  window.addEventListener('resize', handleResize);
+  handleResize(); // Initial call
+});
+</script>
+
+{% endblock %}

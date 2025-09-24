@@ -1,0 +1,213 @@
+{% extends 'base.html' %}
+{% block content %}
+
+<div class="container-fluid default-dashboard">
+  <div class="row">
+
+    <!-- Header -->
+    <div class="col-12 project-list">
+      <div class="card">
+          <div class="row align-items-center">
+              <div class="col-7 p-0">
+                  <ul class="nav nav-tabs border-tab d-flex" role="tablist">
+                      <li class="nav-item">
+                          <a class="nav-link active" href="#" role="tab" aria-selected="true">
+                              <i class="fa fa-user-plus me-2"></i>Convert Lead → Patient
+                          </a>
+                      </li>
+                      <li class="nav-item d-flex align-items-center">
+                          <span class="ms-3 h6 mb-0">{{ lead.name }}</span>
+                      </li>
+                  </ul>
+              </div>
+              <div class="col-5 p-0 d-flex justify-content-end align-items-center gap-2">
+                  <a class="btn btn-light" href="{% url 'lead_detail' pk=lead.pk %}">
+                      <i class="fa fa-arrow-left me-2"></i>Back to Lead
+                  </a>
+              </div>
+          </div>
+      </div>
+    </div>
+
+    <!-- Form + Sidebar -->
+    <div class="col-lg-8">
+      <form method="post" novalidate>
+        {% csrf_token %}
+        <div class="card shadow-sm">
+          <div class="card-body">
+            <h6 class="text-muted mb-3"><i class="fa fa-id-card me-1"></i>Patient Details</h6>
+
+            {% if form.non_field_errors %}
+            <div class="alert alert-danger">{{ form.non_field_errors }}</div>
+            {% endif %}
+
+            <div class="row g-3">
+              <div class="col-md-6">
+                <label class="form-label"><i class="fa fa-user me-1"></i>Name</label>
+                {{ form.name }}
+                {% if form.name.errors %}
+                  <div class="invalid-feedback d-block">
+                    {% for e in form.name.errors %}{{ e }}{% if not forloop.last %}<br>{% endif %}{% endfor %}
+                  </div>
+                {% endif %}
+              </div>
+
+              <div class="col-md-3">
+                <label class="form-label"><i class="fa fa-hourglass-half me-1"></i>Age</label>
+                {{ form.age }}
+                {% if form.age.errors %}
+                  <div class="invalid-feedback d-block">
+                    {% for e in form.age.errors %}{{ e }}{% if not forloop.last %}<br>{% endif %}{% endfor %}
+                  </div>
+                {% endif %}
+              </div>
+              <div class="col-md-3">
+                <label class="form-label"><i class="fa fa-birthday-cake me-1"></i>Date of Birth</label>
+                {{ form.date_of_birth }}
+                {% if form.date_of_birth.errors %}
+                  <div class="invalid-feedback d-block">
+                    {% for e in form.date_of_birth.errors %}{{ e }}{% if not forloop.last %}<br>{% endif %}{% endfor %}
+                  </div>
+                {% endif %}
+              </div>
+              <div class="col-md-4">
+                <label class="form-label"><i class="fa fa-venus-mars me-1"></i>Gender</label>
+                {{ form.gender }}
+
+              </div>
+              <div class="col-md-4">
+                <label class="form-label"><i class="fa fa-phone me-1"></i>Phone Number</label>
+                {{ form.phone_number }}
+                {% if form.phone_number.errors %}
+                  <div class="invalid-feedback d-block">
+                    {% for e in form.phone_number.errors %}{{ e }}{% if not forloop.last %}<br>{% endif %}{% endfor %}
+                  </div>
+                {% endif %}
+              </div>
+              <div class="col-md-4">
+                <label class="form-label"><i class="fa fa-envelope me-1"></i>Email</label>
+                {{ form.email }}
+                {% if form.email.errors %}
+                  <div class="invalid-feedback d-block">
+                    {% for e in form.email.errors %}{{ e }}{% if not forloop.last %}<br>{% endif %}{% endfor %}
+                  </div>
+                {% endif %}
+              </div>
+              <div class="col-md-6">
+                <label class="form-label"><i class="fa fa-address-card me-1"></i>Address</label>
+                {{ form.address }}
+                {% if form.address.errors %}
+                  <div class="invalid-feedback d-block">
+                    {% for e in form.address.errors %}{{ e }}{% if not forloop.last %}<br>{% endif %}{% endfor %}
+                  </div>
+                {% endif %}
+              </div>
+              <div class="col-md-6">
+                <label class="form-label"><i class="fa fa-building-o me-1"></i>City</label>
+                {{ form.city }}
+                {% if form.city.errors %}
+                  <div class="invalid-feedback d-block">
+                    {% for e in form.city.errors %}{{ e }}{% if not forloop.last %}<br>{% endif %}{% endfor %}
+                  </div>
+                {% endif %}
+              </div>
+              <div class="col-md-6">
+                <label class="form-label"><i class="fa fa-map me-1"></i>District</label>
+                {{ form.district }}
+                {% if form.district.errors %}
+                  <div class="invalid-feedback d-block">
+                    {% for e in form.district.errors %}{{ e }}{% if not forloop.last %}<br>{% endif %}{% endfor %}
+                  </div>
+                {% endif %}
+              </div>
+              <div class="col-md-6">
+                <label class="form-label"><i class="fa fa-hashtag me-1"></i>Pincode</label>
+                {{ form.pincode }}
+              </div>
+              <div class="col-md-12">
+                <label class="form-label"><i class="fa fa-briefcase me-1"></i>Occupation</label>
+                {{ form.occupation }}
+              </div>
+            </div>
+            
+          </div>
+          <div class="card-footer d-flex justify-content-end gap-2">
+            <a class="btn btn-light" href="{% url 'lead_detail' pk=lead.pk %}">
+              <i class="fa fa-ban me-1"></i>Cancel
+            </a>
+            <button class="btn btn-primary">
+              <i class="fa fa-check me-1"></i>Convert
+            </button>
+          </div>
+        </div>
+      </form>
+    </div>
+
+    <!-- Lead Summary -->
+    <div class="col-lg-4">
+      <div class="card p-3 shadow-sm">
+        <h6 class="text-muted mb-3"><i class="fa fa-user me-1"></i>Lead Summary</h6>
+        <div class="mb-2">
+          <div class="small text-muted"><i class="fa fa-id-card-o me-1"></i>Name</div>
+          <div class="fw-semibold">{{ lead.name }}</div>
+        </div>
+        <div class="mb-2">
+          <div class="small text-muted"><i class="fa fa-phone me-1"></i>Phone</div>
+          {% if lead.phone_number %}
+          <a class="text-decoration-none" href="tel:{{ lead.phone_number }}">{{ lead.phone_number }}</a>
+          {% else %}<span class="text-muted">—</span>{% endif %}
+        </div>
+        <div class="mb-2">
+          <div class="small text-muted"><i class="fa fa-envelope-o me-1"></i>Email</div>
+          {% if lead.email %}
+          <a class="text-decoration-none" href="mailto:{{ lead.email }}">{{ lead.email }}</a>
+          {% else %}<span class="text-muted">—</span>{% endif %}
+        </div>
+        <div class="mb-2">
+          <div class="small text-muted"><i class="fa fa-search me-1"></i>Source</div>
+          <div>{% if lead.lead_source %}{{ lead.lead_source.name }}{% else %}—{% endif %}</div>
+        </div>
+        <div class="mb-2">
+          <div class="small text-muted"><i class="fa fa-tachometer me-1"></i>Priority</div>
+          {% if lead.priority == 'high' %}
+          <span class="badge text-bg-danger">High</span>
+          {% elif lead.priority == 'medium' %}
+          <span class="badge text-bg-warning text-dark">Medium</span>
+          {% elif lead.priority == 'low' %}
+          <span class="badge text-bg-secondary">Low</span>
+          {% else %}
+          <span class="badge text-bg-light text-muted">{{ lead.get_priority_display }}</span>
+          {% endif %}
+        </div>
+        <div class="mb-2">
+          <div class="small text-muted"><i class="fa fa-map me-1"></i>Location</div>
+          <div>{{ lead.location|default:"—" }}</div>
+        </div>
+        <hr>
+        <div class="mb-2">
+          <div class="small text-muted"><i class="fa fa-clock-o me-1"></i>Last Contact</div>
+          <div>{{ lead.last_contact_date|date:"Y-m-d H:i" }}</div>
+        </div>
+        <div>
+          <div class="small text-muted"><i class="fa fa-calendar-check-o me-1"></i>Next Follow-up</div>
+          <div>{{ lead.next_followup_date|date:"Y-m-d H:i" }}</div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- Auto-apply Bootstrap classes to widgets if missing -->
+<script>
+document.addEventListener('DOMContentLoaded', function(){
+  document.querySelectorAll('input:not([type=checkbox]):not([type=radio]), textarea').forEach(el=>{
+    el.classList.add('form-control');
+  });
+  document.querySelectorAll('select').forEach(el=>{
+    el.classList.add('form-select');
+  });
+});
+</script>
+
+{% endblock %}

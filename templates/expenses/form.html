@@ -1,0 +1,139 @@
+{% extends 'base.html' %}
+{% block content %}
+<div class="container-fluid default-dashboard">
+  <div class="row">
+    <!-- Header -->
+    <div class="col-12 project-list">
+      <div class="card">
+          <div class="row align-items-center">
+              <div class="col-6 p-0">
+                  <ul class="nav nav-tabs border-tab d-flex" role="tablist">
+                      <li class="nav-item">
+                          <a class="nav-link active" href="#" role="tab" aria-selected="true">
+                              <i class="fa fa-money me-2"></i>
+                              {% if is_edit %}Edit Expense{% else %}New Expense{% endif %}
+                          </a>
+                      </li>
+                  </ul>
+              </div>
+              <div class="col-6 p-0 d-flex justify-content-end align-items-center gap-2">
+                  {% if is_edit %}
+                  <a class="btn btn-outline-secondary" href="{% url 'expense_detail' expense.pk %}">
+                      <i class="fa fa-arrow-left me-2"></i>Back to Details
+                  </a>
+                  {% else %}
+                  <a class="btn btn-outline-secondary" href="{% url 'expense_list' %}">
+                      <i class="fa fa-arrow-left me-2"></i>Back to Expenses
+                  </a>
+                  {% endif %}
+              </div>
+          </div>
+      </div>
+    </div>
+
+    <!-- Form -->
+    <div class="col-md-12">
+      <form method="post" enctype="multipart/form-data" novalidate class="d-print-none">
+        {% csrf_token %}
+        <div class="card shadow-sm">
+          <div class="card-body">
+            {% if form.non_field_errors %}
+            <div class="alert alert-danger mb-3">{{ form.non_field_errors }}</div>
+            {% endif %}
+
+            <div class="row g-3">
+              {# Render all fields EXCEPT status here #}
+              {% for field in form.visible_fields %}
+              {% if field.name != 'status' %}
+              <div class="col-md-{% if field.name == 'description' %}12{% else %}6{% endif %}">
+                <label class="form-label" for="{{ field.id_for_label }}">
+                  {% if field.name == 'expense_date' %}<i class="fa fa-calendar me-1"></i>{% endif %}
+                  {% if field.name == 'category' %}<i class="fa fa-tag me-1"></i>{% endif %}
+                  {% if field.name == 'amount' %}<i class="fa fa-inr me-1"></i>{% endif %}
+                  {% if field.name == 'description' %}<i class="fa fa-file me-1"></i>{% endif %}
+                  {% if field.name == 'attachment' %}<i class="fa fa-paperclip me-1"></i>{% endif %}
+                  {{ field.label }}{% if field.field.required %}<span class="text-danger">*</span>{% endif %}
+                </label>
+                {{ field }}
+                {% if field.errors %}
+                <div class="invalid-feedback d-block">
+                  {% for e in field.errors %}{{ e }}{% if not forloop.last %}<br>{% endif %}{% endfor %}
+                </div>
+                {% endif %}
+                {% if field.help_text %}
+                <div class="form-text">{{ field.help_text }}</div>
+                {% endif %}
+              </div>
+              {% endif %}
+              {% endfor %}
+            </div>
+
+            {# Status: shown once, outside the loop #}
+            <div class="row g-3 mt-3">
+              {% if can_edit_status %}
+              <div class="col-md-4">
+                <label class="form-label" for="{{ form.status.id_for_label }}"><i class="fa fa-info-circle me-1"></i>Status</label>
+                {{ form.status }}
+                {% if form.status.errors %}
+                <div class="invalid-feedback d-block">
+                  {% for e in form.status.errors %}{{ e }}{% if not forloop.last %}<br>{% endif %}{% endfor %}
+                </div>
+                {% endif %}
+              </div>
+              {% else %}
+              {{ form.status.as_hidden }}
+              {% if is_edit %}
+              <div class="col-12">
+                <div class="alert alert-info py-2 mb-0">
+                  <i class="fa fa-exclamation-circle me-1"></i>Current status:
+                  {% if form.instance.status == 'pending' %}
+                  <span class="badge text-bg-warning text-dark">Pending</span>
+                  {% elif form.instance.status == 'approved' %}
+                  <span class="badge text-bg-success">Approved</span>
+                  {% elif form.instance.status == 'rejected' %}
+                  <span class="badge text-bg-danger">Rejected</span>
+                  {% else %}
+                  <span class="badge text-bg-light text-dark">{{ form.instance.get_status_display }}</span>
+                  {% endif %}
+                </div>
+              </div>
+              {% endif %}
+              {% endif %}
+            </div>
+          </div>
+
+          <div class="card-footer d-flex justify-content-end gap-2">
+            {% if is_edit %}
+            <a class="btn btn-light" href="{% url 'expense_detail' expense.pk %}">
+              <i class="fa fa-ban me-1"></i>Cancel
+            </a>
+            <button class="btn btn-primary"><i class="fa fa-save me-1"></i>Update</button>
+            {% else %}
+            <a class="btn btn-light" href="{% url 'expense_list' %}">
+              <i class="fa fa-ban me-1"></i>Cancel
+            </a>
+            <button class="btn btn-primary"><i class="fa fa-save me-1"></i>Submit</button>
+            {% endif %}
+          </div>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function(){
+  // Add Bootstrap classes to widgets
+  document.querySelectorAll('input:not([type=file]):not([type=checkbox]):not([type=radio]), textarea')
+    .forEach(el => el.classList.add('form-control'));
+  document.querySelectorAll('select').forEach(el => el.classList.add('form-select'));
+  document.querySelectorAll('input[type=file]').forEach(el => el.classList.add('form-control'));
+
+  // Mark invalid fields
+  document.querySelectorAll('.invalid-feedback.d-block').forEach(err => {
+    const field = err.previousElementSibling || err.parentElement.querySelector('input,select,textarea');
+    if (field) field.classList.add('is-invalid');
+  });
+});
+</script>
+{% endblock %}

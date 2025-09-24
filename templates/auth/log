@@ -1,0 +1,58 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    {% include "includes/adminheader.html" %}
+    <title>DLapp </title>
+
+    
+  </head>
+  <body> 
+
+    <div class="tap-top"><i data-feather="chevrons-up"></i></div>
+
+    <div class="page-wrapper compact-wrapper" id="pageWrapper">
+
+      {% include "includes/page_header.html" %}
+
+      <div class="page-body-wrapper"> 
+        {% include "includes/sidebar.html" %}
+
+        <div class="page-body">
+          <div class="container-fluid">
+            <div class="page-title"> 
+              <div class="row">
+                <div class="col-xl-4 col-sm-7 box-col-3">
+                  <h3>Products</h3>
+                </div>
+                <div class="col-5 d-none d-xl-block">
+                </div>
+                <div class="col-xl-3 col-sm-5 box-col-4">
+                  <ol class="breadcrumb"> 
+                    <li class="breadcrumb-item"><a href="{% url 'home' %}">
+                        <svg class="stroke-icon">
+                          <use href="{% static 'assets/svg/icon-sprite.svg' %}#stroke-home"></use>
+                        </svg></a></li>
+                    <li class="breadcrumb-item">Dashboard</li>
+                    <li class="breadcrumb-item active">Default</li>
+                  </ol>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="container-fluid default-dashboard"> 
+            <div class="row">
+                <!-- Contents starts-->
+
+            </div>
+          </div>
+            
+        </div>
+        
+        {% include "includes/footer.html" %}
+      </div>
+    </div>
+
+    {% include "includes/adminscripts.html" %}
+  </body>
+</html>

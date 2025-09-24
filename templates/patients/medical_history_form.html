@@ -1,0 +1,178 @@
+{% extends 'base.html' %}
+{% block content %}
+
+<div class="container-fluid default-dashboard">
+  <div class="row">
+    <div class="col-md-12 project-list">
+      <div class="card">
+        <div class="row">
+          <div class="col-md-6 p-0">
+            <ul class="nav nav-tabs border-tab d-flex" role="tablist">
+              <li class="nav-item">
+                <a class="nav-link active" href="#" role="tab" aria-selected="true">
+                  <i data-feather="clipboard"></i>
+                  {% if is_edit %}Edit Medical History{% else %}New Medical History{% endif %}
+                </a>
+              </li>
+              {% if patient %}
+              <li class="nav-item">
+                <span class="text-muted small">({{ patient.name }} • {{ patient.file_number }})</span>
+              </li>
+              {% endif %}
+            </ul>
+          </div>
+          <div class="col-md-6 p-0 d-flex justify-content-end align-items-center">
+            <a class="btn btn-outline-secondary" href="{% url 'patient_detail' pk=patient.pk %}">
+              <i class="fa fa-arrow-left me-2"></i>Back to Patient
+            </a>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <form method="post" novalidate class="d-print-none">
+      {% csrf_token %}
+      {% if form.non_field_errors %}
+        <div class="alert alert-danger">{{ form.non_field_errors }}</div>
+      {% endif %}
+
+      <div class="card shadow-sm">
+        <div class="card-body">
+          <h6 class="text-muted mb-3">Conditions</h6>
+
+          <div class="row g-3">
+            <!-- Hypertension -->
+            <div class="col-md-6">
+              <div class="card p-3 h-100">
+                <div class="d-flex justify-content-between align-items-center">
+                  <div class="form-check">
+                    {{ form.hypertension }}
+                    <label class="form-check-label ms-1" for="{{ form.hypertension.id_for_label }}">Hypertension</label>
+                  </div>
+                  <div class="form-check">
+                    {{ form.hypertension_family }}
+                    <label class="form-check-label ms-1" for="{{ form.hypertension_family.id_for_label }}">Family</label>
+                  </div>
+                </div>
+                {% if form.hypertension.errors %}<div class="invalid-feedback d-block">{{ form.hypertension.errors|join:", " }}</div>{% endif %}
+                {% if form.hypertension_family.errors %}<div class="invalid-feedback d-block">{{ form.hypertension_family.errors|join:", " }}</div>{% endif %}
+              </div>
+            </div>
+
+            <!-- Diabetes -->
+            <div class="col-md-6">
+              <div class="card p-3 h-100">
+                <div class="d-flex justify-content-between align-items-center">
+                  <div class="form-check">
+                    {{ form.diabetes }}
+                    <label class="form-check-label ms-1" for="{{ form.diabetes.id_for_label }}">Diabetes</label>
+                  </div>
+                  <div class="form-check">
+                    {{ form.diabetes_family }}
+                    <label class="form-check-label ms-1" for="{{ form.diabetes_family.id_for_label }}">Family</label>
+                  </div>
+                </div>
+                {% if form.diabetes.errors %}<div class="invalid-feedback d-block">{{ form.diabetes.errors|join:", " }}</div>{% endif %}
+                {% if form.diabetes_family.errors %}<div class="invalid-feedback d-block">{{ form.diabetes_family.errors|join:", " }}</div>{% endif %}
+              </div>
+            </div>
+
+            <!-- Thyroid -->
+            <div class="col-md-6">
+              <div class="card p-3 h-100">
+                <div class="d-flex justify-content-between align-items-center">
+                  <div class="form-check">
+                    {{ form.thyroid_disorder }}
+                    <label class="form-check-label ms-1" for="{{ form.thyroid_disorder.id_for_label }}">Thyroid Disorder</label>
+                  </div>
+                  <div class="form-check">
+                    {{ form.thyroid_disorder_family }}
+                    <label class="form-check-label ms-1" for="{{ form.thyroid_disorder_family.id_for_label }}">Family</label>
+                  </div>
+                </div>
+                {% if form.thyroid_disorder.errors %}<div class="invalid-feedback d-block">{{ form.thyroid_disorder.errors|join:", " }}</div>{% endif %}
+                {% if form.thyroid_disorder_family.errors %}<div class="invalid-feedback d-block">{{ form.thyroid_disorder_family.errors|join:", " }}</div>{% endif %}
+              </div>
+            </div>
+
+            <!-- Autoimmune -->
+            <div class="col-md-6">
+              <div class="card p-3 h-100">
+                <div class="d-flex justify-content-between align-items-center">
+                  <div class="form-check">
+                    {{ form.autoimmune_disease }}
+                    <label class="form-check-label ms-1" for="{{ form.autoimmune_disease.id_for_label }}">Autoimmune Disease</label>
+                  </div>
+                  <div class="form-check">
+                    {{ form.autoimmune_disease_family }}
+                    <label class="form-check-label ms-1" for="{{ form.autoimmune_disease_family.id_for_label }}">Family</label>
+                  </div>
+                </div>
+                {% if form.autoimmune_disease.errors %}<div class="invalid-feedback d-block">{{ form.autoimmune_disease.errors|join:", " }}</div>{% endif %}
+                {% if form.autoimmune_disease_family.errors %}<div class="invalid-feedback d-block">{{ form.autoimmune_disease_family.errors|join:", " }}</div>{% endif %}
+              </div>
+            </div>
+
+            <!-- Allergies -->
+            <div class="col-md-6">
+              <div class="card p-3 h-100">
+                <div class="d-flex justify-content-between align-items-center">
+                  <div class="form-check">
+                    {{ form.allergies }}
+                    <label class="form-check-label ms-1" for="{{ form.allergies.id_for_label }}">Allergies</label>
+                  </div>
+                  <div class="form-check">
+                    {{ form.allergies_family }}
+                    <label class="form-check-label ms-1" for="{{ form.allergies_family.id_for_label }}">Family</label>
+                  </div>
+                </div>
+                {% if form.allergies.errors %}<div class="invalid-feedback d-block">{{ form.allergies.errors|join:", " }}</div>{% endif %}
+                {% if form.allergies_family.errors %}<div class="invalid-feedback d-block">{{ form.allergies_family.errors|join:", " }}</div>{% endif %}
+              </div>
+            </div>
+          </div>
+
+          <hr class="my-4">
+
+          <h6 class="text-muted mb-3">Details</h6>
+          <div class="row g-3">
+            <div class="col-md-6">
+              <label class="form-label" for="{{ form.allergy_details.id_for_label }}">Allergy details</label>
+              {{ form.allergy_details }}
+              {% if form.allergy_details.errors %}<div class="invalid-feedback d-block">{{ form.allergy_details.errors|join:", " }}</div>{% endif %}
+            </div>
+            <div class="col-md-6">
+              <label class="form-label" for="{{ form.current_medications.id_for_label }}">Current medications</label>
+              {{ form.current_medications }}
+              {% if form.current_medications.errors %}<div class="invalid-feedback d-block">{{ form.current_medications.errors|join:", " }}</div>{% endif %}
+            </div>
+            <div class="col-md-6">
+              <label class="form-label" for="{{ form.surgical_history.id_for_label }}">Surgical history</label>
+              {{ form.surgical_history }}
+              {% if form.surgical_history.errors %}<div class="invalid-feedback d-block">{{ form.surgical_history.errors|join:", " }}</div>{% endif %}
+            </div>
+            <div class="col-md-6">
+              <label class="form-label" for="{{ form.other_conditions.id_for_label }}">Other conditions</label>
+              {{ form.other_conditions }}
+              {% if form.other_conditions.errors %}<div class="invalid-feedback d-block">{{ form.other_conditions.errors|join:", " }}</div>{% endif %}
+            </div>
+          </div>
+        </div>
+
+        <div class="card-footer d-flex justify-content-end gap-2">
+          <a href="{% url 'patient_detail' pk=patient.pk %}" class="btn btn-light">Cancel</a>
+          <button class="btn btn-primary">Save</button>
+        </div>
+      </div>
+    </form>
+  </div>
+</div>
+
+<style>
+  @media print {
+    .nav, .btn, .d-print-none { display: none !important; }
+    .card { border: none !important; box-shadow: none !important; }
+  }
+</style>
+
+{% endblock %}

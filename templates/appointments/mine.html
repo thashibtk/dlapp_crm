@@ -1,0 +1,321 @@
+{% extends 'base.html' %}
+{% load static %}
+{% block content %}
+
+<style>
+  /* DT search alignment (optional) */
+  div.dataTables_wrapper div.dataTables_filter{
+    position:static;flex:1 1 auto;min-width:200px;max-width:300px;margin-left:auto;text-align:right
+  }
+  @media (max-width:767px){
+    div.dataTables_wrapper div.dataTables_filter{flex:1 1 100%;min-width:unset;max-width:unset;margin-left:0;text-align:left;order:-1;padding:10px 0}
+  }
+  /* Print container hidden on screen */
+  .print-table-container{display:none}
+  @media print{
+    @page{size:A4 portrait;margin:10mm 8mm 15mm 8mm}
+    body{margin:0!important;padding:0!important;font-family:Arial,Helvetica,sans-serif!important;font-size:10pt!important;line-height:1.2!important;color:#000!important;background:#fff!important}
+    body *{visibility:hidden!important}
+    .print-table-container,.print-table-container *{visibility:visible!important}
+    .print-table-container{display:block!important;position:absolute!important;left:0!important;top:0!important;width:100%!important;margin:0!important;padding:0!important;background:#fff!important}
+    .print-table{width:100%;border-collapse:collapse;margin-top:20px}
+    .print-table th,.print-table td{border:1px solid #ddd;padding:6px;text-align:left;font-size:11px}
+    .print-table th{background:#2b5f60!important;color:#fff!important}
+    .print-table tbody tr:nth-child(even){background:#f9f9f9!important}
+    *{-webkit-print-color-adjust:exact!important;print-color-adjust:exact!important}
+  }
+</style>
+
+<div class="container-fluid default-dashboard">
+  <div class="row">
+
+    <!-- Header -->
+    <div class="col-12 project-list d-print-none">
+      <div class="card">
+        <div class="row align-items-center">
+          <div class="col-12 p-2 d-flex flex-wrap justify-content-between align-items-center gap-2">
+            <ul class="nav nav-tabs border-tab d-flex align-items-center" role="tablist">
+              <li class="nav-item">
+                <a class="nav-link active" href="#" role="tab" aria-selected="true">
+                  <i class="fa fa-user-md me-2"></i>My Appointments
+                </a>
+              </li>
+              <li class="nav-item d-flex align-items-center">
+                <span class="text-muted small ms-2">
+                  <i class="fa fa-hashtag me-1"></i>Total: {{ appointments|length }}
+                </span>
+              </li>
+            </ul>
+            <div class="d-flex align-items-center gap-2">
+              <button type="button" class="btn btn-outline-success" onclick="printAppointments()">
+                <i class="fa fa-print me-2"></i>Print
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Filters -->
+    <div class="col-md-12 d-print-none">
+      <form class="card p-3 mb-3" method="get" id="filterForm">
+        <div class="row g-3 align-items-end">
+          <!-- Quick range -->
+          <div class="col-12 col-lg-4">
+            <label class="form-label mb-1 small text-muted"><i class="fa fa-bolt me-1"></i>Quick range</label>
+            <div class="btn-group w-100" role="group">
+              <button class="btn btn-outline-secondary" type="button" data-range="today" aria-pressed="false">
+                <i class="fa fa-calendar me-1"></i>Today
+              </button>
+              <button class="btn btn-outline-secondary" type="button" data-range="7d" aria-pressed="false">
+                <i class="fa fa-calendar me-1"></i>Last 7 days
+              </button>
+              <button class="btn btn-outline-secondary" type="button" data-range="month" aria-pressed="false">
+                <i class="fa fa-calendar me-1"></i>This month
+              </button>
+            </div>
+          </div>
+
+          <!-- From / To -->
+          <div class="col-6 col-lg-2">
+            <label class="form-label mb-1 small text-muted"><i class="fa fa-sign-in me-1"></i>From</label>
+            <input type="date" class="form-control" name="from"
+                   value="{{ selected.from|date:'Y-m-d' }}"
+                   max="{{ selected.to|date:'Y-m-d' }}">
+          </div>
+          <div class="col-6 col-lg-2">
+            <label class="form-label mb-1 small text-muted"><i class="fa fa-sign-out me-1"></i>To</label>
+            <input type="date" class="form-control" name="to"
+                   value="{{ selected.to|date:'Y-m-d' }}"
+                   min="{{ selected.from|date:'Y-m-d' }}">
+          </div>
+
+          <!-- Search -->
+          <div class="col-12 col-lg-2">
+            <label class="form-label mb-1 small text-muted"><i class="fa fa-search me-1"></i>Search</label>
+            <input type="text" class="form-control" name="q" placeholder="Patient / phone / file #" value="{{ selected.q|default:'' }}">
+          </div>
+
+          <!-- Status -->
+          <div class="col-12 col-lg-2">
+            <label class="form-label mb-1 small text-muted"><i class="fa fa-list me-1"></i>Status</label>
+            <select class="form-select" name="status">
+              {% for v,label in status_choicesfilter %}
+                <option value="{{ v }}" {% if selected.status == v %}selected{% endif %}>{{ label }}</option>
+              {% endfor %}
+            </select>
+          </div>
+
+          <!-- Actions -->
+          <div class="col-12 d-flex flex-wrap gap-2 justify-content-lg-end">
+            <button class="btn btn-outline-secondary" type="submit">
+              <i class="fa fa-filter me-2"></i>Filter
+            </button>
+            <a class="btn btn-light" href="{% url 'my_appointment_list' %}">
+              <i class="fa fa-refresh me-2"></i>Clear
+            </a>
+          </div>
+        </div>
+      </form>
+    </div>
+
+    <!-- Table -->
+    <div class="col-sm-12">
+      <div class="card shadow-sm">
+        <div class="card-body">
+          <div class="table-responsive custom-scrollbar">
+            <table class="table table-hover table-sm align-middle display" id="basic-1">
+              <thead>
+                <tr>
+                  <th class="text-nowrap">#</th>
+                  <th class="text-nowrap"><i class="fa fa-clock-o me-1"></i>Date & Time</th>
+                  <th><i class="fa fa-user me-1"></i>Patient</th>
+                  <th><i class="fa fa-phone me-1"></i>Phone</th>
+                  <th class="text-nowrap"><i class="fa fa-flag me-1"></i>Status</th>
+                  <th class="text-nowrap"><i class="fa fa-ellipsis-h me-1"></i>Action</th>
+                </tr>
+              </thead>
+              <tbody>
+                {% for a in appointments %}
+                <tr>
+                  <td class="text-nowrap">
+                    <a class="font-primary text-decoration-none" href="{% url 'appointment_detail' a.pk %}">
+                      {{ forloop.counter }}
+                    </a>
+                  </td>
+                  <td class="text-nowrap">
+                    {{ a.appointment_date|date:"d-M-Y" }}<br>
+                    <span class="text-muted">{{ a.appointment_date|date:"h:i A" }}</span>
+                  </td>
+                  <td class="text-nowrap">
+                    <a class="font-primary text-decoration-none" href="{% url 'patient_detail' a.patient.pk %}">
+                      {{ a.patient.name }}
+                    </a>
+                  </td>
+                  <td class="text-nowrap">{{ a.patient.phone_number|default:"—" }}</td>
+                  <td class="text-nowrap">
+                    {% if a.status == 'scheduled' %}
+                      <span class="badge text-bg-secondary"><i class="fa fa-circle me-1"></i>Scheduled</span>
+                    {% elif a.status == 'completed' %}
+                      <span class="badge text-bg-success"><i class="fa fa-check-circle me-1"></i>Completed</span>
+                    {% elif a.status == 'cancelled' %}
+                      <span class="badge text-bg-danger"><i class="fa fa-times-circle me-1"></i>Cancelled</span>
+                    {% elif a.status == 'rescheduled' %}
+                      <span class="badge text-bg-info"><i class="fa fa-check me-1"></i>Rescheduled</span>
+                    {% else %}
+                      <span class="badge text-bg-light text-muted">{{ a.get_status_display }}</span>
+                    {% endif %}
+                  </td>
+                  <td>
+                    <a class="btn btn-sm btn-outline-secondary" href="{% url 'appointment_detail' a.pk %}">
+                      <i class="fa fa-eye me-1"></i>View
+                    </a>
+                  </td>
+                </tr>
+                {% empty %}
+                <tr class="bg-light">
+                  <td colspan="6" class="text-center text-muted py-4">
+                    <i class="fa fa-inbox me-2"></i>No appointments.
+                  </td>
+                </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- Print-only container -->
+<div class="print-table-container">
+  <div class="print-header" style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:20px;border-bottom:2px solid #333;padding-bottom:10px;">
+    <div><img src="{% static 'assets/images/logo/dlapp_logo_grncut.png' %}" alt="DLapp" style="width:80px;height:auto"></div>
+    <div style="text-align:right">
+      <h1 style="font-size:24px;margin:0;color:#2b5f60">D Lapp Hair Regenerative Clinic</h1>
+      <p style="margin:5px 0;font-size:12px;color:#555">Kottayil Arcade, Malaparamba,<br>Kozhikode, Kerala 673009<br>Phone: +91 8593957885 | Email: info@dlapphairclinic.com</p>
+    </div>
+  </div>
+  <div style="text-align:center;margin-bottom:15px">
+    <h2 style="font-size:18px;margin:0 0 5px">My Appointments</h2>
+    <p>
+      Status: <span id="printStatusDisplay">All</span> |
+      Date Range: <span id="printDateRangeDisplay">All Dates</span> |
+      Total: <strong>{{ appointments|length }}</strong>
+    </p>
+  </div>
+  <table class="print-table">
+    <thead>
+      <tr>
+        <th style="width:6%;">#</th>
+        <th style="width:22%;">Date & Time</th>
+        <th style="width:28%;">Patient</th>
+        <th style="width:18%;">Phone</th>
+        <th style="width:16%;">Status</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for a in appointments %}
+      <tr>
+        <td>{{ forloop.counter }}</td>
+        <td>{{ a.appointment_date|date:"d-M-Y h:i A" }}</td>
+        <td>{{ a.patient.name }}</td>
+        <td>{{ a.patient.phone_number|default:"—" }}</td>
+        <td>{{ a.get_status_display }}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  <div class="print-footer" style="text-align:center;margin-top:40px;font-size:10px;color:#666">
+    Generated by {{ request.user.get_full_name|default:request.user.username }} on {% now "F d, Y, h:i A" %}
+  </div>
+</div>
+
+<script>
+// Print header fill
+function printAppointments(){
+  const form   = document.getElementById('filterForm');
+  const status = form?.querySelector('select[name="status"]');
+  const fromI  = form?.querySelector('input[name="from"]');
+  const toI    = form?.querySelector('input[name="to"]');
+
+  document.getElementById('printStatusDisplay').textContent =
+    status && status.value ? status.options[status.selectedIndex].text : 'All';
+
+  let dr = 'All Dates';
+  if (fromI?.value && toI?.value) dr = `From ${fromI.value} to ${toI.value}`;
+  else if (fromI?.value) dr = `From ${fromI.value}`;
+  else if (toI?.value)   dr = `To ${toI.value}`;
+  document.getElementById('printDateRangeDisplay').textContent = dr;
+
+  window.print();
+}
+</script>
+
+<script>
+// Quick ranges with active state + date guards
+document.addEventListener('DOMContentLoaded', function(){
+  const form = document.getElementById('filterForm');
+  if (!form) return;
+
+  const fromI = form.querySelector('input[name="from"]');
+  const toI   = form.querySelector('input[name="to"]');
+  const qBtns = form.querySelectorAll('[data-range]');
+
+  const pad = n => String(n).padStart(2,'0');
+  const fmt = d => `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`;
+  const parseISO = s => { if(!s) return null; const [y,m,d]=s.split('-').map(Number); return new Date(y,m-1,d); };
+  const today = (()=>{ const n=new Date(); return new Date(n.getFullYear(),n.getMonth(),n.getDate()); })();
+  const start7d = new Date(today.getFullYear(), today.getMonth(), today.getDate() - 6);
+  const monthStart = new Date(today.getFullYear(), today.getMonth(), 1);
+  const monthEnd   = new Date(today.getFullYear(), today.getMonth() + 1, 0);
+
+  const clearActive = () => qBtns.forEach(b => { b.classList.remove('active'); b.setAttribute('aria-pressed','false'); });
+  const setActive   = (btn) => { clearActive(); if (btn) { btn.classList.add('active'); btn.setAttribute('aria-pressed','true'); } };
+  const syncMinMax  = () => { if (!fromI || !toI) return; toI.min = fromI.value || ''; fromI.max = toI.value || ''; };
+
+  (function inferActive(){
+    const f = parseISO(fromI?.value), t = parseISO(toI?.value);
+    if (!f || !t) { clearActive(); return; }
+    const fISO = fmt(f), tISO = fmt(t);
+    if (fISO === fmt(today) && tISO === fmt(today)) { setActive(form.querySelector('[data-range="today"]')); return; }
+    if (fISO === fmt(start7d) && tISO === fmt(today)) { setActive(form.querySelector('[data-range="7d"]')); return; }
+    if (fISO === fmt(monthStart) && tISO === fmt(monthEnd)) { setActive(form.querySelector('[data-range="month"]')); return; }
+    clearActive();
+  })();
+
+  syncMinMax();
+
+  function applyRange(kind){
+    let s=new Date(today), e=new Date(today);
+    if (kind==='7d'){ s=start7d; e=today; }
+    else if (kind==='month'){ s=monthStart; e=monthEnd; }
+    if (fromI) fromI.value = fmt(s);
+    if (toI)   toI.value   = fmt(e);
+    syncMinMax();
+  }
+
+  qBtns.forEach(btn=>{
+    btn.addEventListener('click', ()=>{
+      applyRange(btn.getAttribute('data-range'));
+      setActive(btn);
+      form.submit();
+    });
+  });
+
+  const onDateChange = ()=>{
+    if (fromI?.value && toI?.value && toI.value < fromI.value) toI.value = fromI.value;
+    syncMinMax();
+    clearActive();
+  };
+  fromI?.addEventListener('input', onDateChange);
+  toI?.addEventListener('input', onDateChange);
+
+  // Ensure clean GET path
+  form.setAttribute('action', window.location.pathname);
+});
+</script>
+
+{% endblock %}

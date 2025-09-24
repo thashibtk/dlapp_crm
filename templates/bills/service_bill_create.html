@@ -1,0 +1,696 @@
+{% extends 'base.html' %}
+{% load static %}
+{% block content %}
+<style>
+  .search-dropdown{position:absolute;top:100%;left:0;right:0;border:1px solid #ddd;border-radius:4px;box-shadow:0 4px 6px rgba(0,0,0,.1);z-index:1050;max-height:300px;overflow-y:auto;display:none}
+  .search-input{padding:8px;border-bottom:1px solid #eee;}
+  .search-results{max-height:250px;overflow-y:auto}
+  .search-result-item{padding:10px 12px;border-bottom:1px solid #f0f0f0;cursor:pointer}
+  .search-result-item:hover{background:#f8f9fa;color:#000}
+  .search-result-item.selected{background:#eef5ff}
+  .search-result-item:last-child{border-bottom:none}
+  .no-results{padding:15px;text-align:center;color:#666;font-style:italic}
+  .custom-select-trigger{position:relative;border:1px solid #ced4da;border-radius:.375rem;padding:.375rem 2.25rem .375rem .75rem;cursor:pointer;display:flex;align-items:center;justify-content:space-between;min-height:38px;background:#fff}
+  .custom-select-trigger:after{content:'\f078';font-family:'FontAwesome';position:absolute;right:.75rem}
+  .custom-select-trigger.open:after{content:'\f077'}
+  .bg-warning-subtle{background:#fff3cd !important}
+  .bg-success-subtle{background:#d1e7dd !important}
+</style>
+
+<div class="container-fluid default-dashboard">
+  <div class="row">
+    <!-- Header -->
+    <div class="col-12 project-list">
+      <div class="card">
+        <div class="row">
+          <div class="col-6 p-0">
+            <ul class="nav nav-tabs border-tab d-flex" role="tablist">
+              <li class="nav-item">
+                <a class="nav-link active" href="#" role="tab" aria-selected="true">
+                  <i class="fa fa-stethoscope me-1"></i>
+                  {% if is_edit %} Edit {% else %} New {% endif %} Service Bill
+                </a>
+              </li>
+              <li class="nav-item">
+                <span class="text-muted small"><i class="fa fa-tag me-1"></i>Type: Service</span>
+              </li>
+            </ul>
+          </div>
+          <div class="col-6 p-0 d-flex justify-content-end align-items-center">
+            <a class="btn btn-outline-secondary" href="{% url 'service_bill_list' %}">
+              <i class="fa fa-arrow-left me-2"></i>Back to Bills
+            </a>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Form -->
+    <div class="col-md-12">
+      <form method="post" novalidate class="d-print-none">
+        {% csrf_token %}
+        {% if header_form.non_field_errors %}
+          <div class="alert alert-danger">{{ header_form.non_field_errors }}</div>
+        {% endif %}
+
+        <div class="card shadow-sm">
+          <div class="card-body">
+            <h6 class="text-muted mb-3"><i class="fa fa-user me-1"></i>Bill Details</h6>
+
+            <!-- Patient + Balance -->
+            <div class="row g-3">
+              <div class="col-md-6">
+                <label class="form-label" for="{{ header_form.patient.id_for_label }}">Patient</label>
+                <div class="position-relative">
+                  <select name="{{ header_form.patient.html_name }}"
+                          id="{{ header_form.patient.id_for_label }}"
+                          class="form-select patient-select">
+                    <option value="">---------</option>
+                    {% for p in header_form.fields.patient.queryset %}
+                      <option value="{{ p.pk }}"
+                              data-age="{{ p.age }}"
+                              data-gender="{{ p.gender }}"
+                              data-phone="{{ p.phone_number }}"
+                              data-address="{{ p.address }}"
+                              data-city="{{ p.city }}"
+                              data-file="{{ p.file_number }}"
+                              data-balance="{{ p.balance }}"
+                              data-search="{{ p.name }} {{ p.phone_number }} {{ p.file_number }}"
+                              {% if header_form.initial.patient == p.pk %}selected{% endif %}>
+                        {{ p.name }}
+                      </option>
+                    {% endfor %}
+                  </select>
+                  <div class="search-dropdown bg-light text-dark"></div>
+                </div>
+                <div id="patient-details" class="mt-2 small text-muted"></div>
+                <div id="bill-balance-summary" class="mt-2"></div>
+                {% if header_form.patient.errors %}
+                  <div class="invalid-feedback d-block">{{ header_form.patient.errors|join:", " }}</div>
+                {% endif %}
+              </div>
+            </div>
+
+            <hr class="my-4">
+
+            <!-- Services -->
+            <h6 class="text-muted mb-3 d-flex align-items-center gap-2">
+              <i class="fa fa-stethoscope me-1"></i>Services
+              <button type="button" id="add-row" class="btn btn-sm btn-outline-primary ms-auto">
+                <i class="fa fa-plus me-1"></i>Add Row
+              </button>
+            </h6>
+
+            {{ formset.management_form }}
+            <div class="table-responsive">
+              <table class="table table-sm align-middle">
+                <thead>
+                  <tr>
+                    <th style="min-width: 240px; font-weight:bold;">Service</th>
+                    <th style="width: 100px; font-weight:bold;">Qty</th>
+                    <th style="width: 150px; font-weight:bold;">Unit Price</th>
+                    <th style="width: 140px; font-weight:bold;" class="text-end">Line Total</th>
+                    <th style="width: 120px; font-weight:bold;" class="text-center">Remove</th>
+                  </tr>
+                </thead>
+                <tbody id="items-body">
+                  {% for f in formset.forms %}
+                    <tr class="item-row">
+                      {{ f.id }}
+                      <td>
+                        <div class="position-relative">
+                          <select name="{{ f.service.html_name }}" class="form-select service-select" id="{{ f.service.id_for_label }}">
+                            <option value="">---------</option>
+                            {% for s in f.fields.service.queryset %}
+                              <option value="{{ s.pk }}"
+                                      data-price="{{ s.default_price|default_if_none:'0.00' }}"
+                                      data-search="{{ s.name }} {{ s.code }}"
+                                      {% if f.initial.service == s.pk %}selected{% endif %}>
+                                {{ s.name }}
+                              </option>
+
+                            {% endfor %}
+                          </select>
+                          <div class="search-dropdown bg-light text-dark"></div>
+                        </div>
+                        {% if f.service.errors %}
+                          <div class="invalid-feedback d-block">{{ f.service.errors|join:", " }}</div>
+                        {% endif %}
+                      </td>
+                      <td>
+                        {{ f.quantity }}
+                        {% if f.quantity.errors %}<div class="invalid-feedback d-block">{{ f.quantity.errors|join:", " }}</div>{% endif %}
+                      </td>
+                      <td>
+                        {{ f.unit_price }}
+                        {% if f.unit_price.errors %}<div class="invalid-feedback d-block">{{ f.unit_price.errors|join:", " }}</div>{% endif %}
+                      </td>
+                      <td class="text-end fw-semibold"><span class="line-total">₹ 0.00</span></td>
+                      <td class="text-center">
+                        {% if f.DELETE %}{{ f.DELETE.as_hidden }}{% endif %}
+                        <button type="button" class="btn btn-sm btn-outline-danger remove-row" title="Remove row">
+                          <i class="fa fa-times"></i>
+                        </button>
+                      </td>
+                    </tr>
+                  {% endfor %}
+                </tbody>
+                <tfoot>
+                  <tr>
+                    <th colspan="3" class="text-end">Subtotal</th>
+                    <th class="text-end"><span id="subtotal">₹ 0.00</span></th>
+                    <th></th>
+                  </tr>
+                  <tr>
+                    <th colspan="3" class="text-end">Tax</th>
+                    <th class="text-end">
+                      {{ header_form.tax_amount }}
+                    </th>
+                    <th></th>
+                  </tr>
+                  <tr>
+                    <th colspan="3" class="text-end">Discount</th>
+                    <th class="text-end">
+                      {{ header_form.discount_amount }}
+                    </th>
+                    <th></th>
+                  </tr>
+
+                  <tr class="table-light">
+                    <th colspan="3" class="text-end h6 mb-0 fw-bold">Grand Total</th>
+                    <th class="text-end h6 mb-0"><span id="grandtotal">₹ 0.00</span></th>
+                    <th></th>
+                  </tr>
+                </tfoot>
+              </table>
+
+              <div class="col-md-12 mt-2">
+                <label class="form-label">Remarks</label>
+                {{ header_form.remark }}
+              </div>
+            </div>
+
+            <hr class="my-4">
+
+            <!-- Payment -->
+            <h6 class="text-muted mb-3"><i class="fa fa-money me-1"></i>Payment</h6>
+            <div class="row g-3">
+              <div class="col-md-3">
+                <label class="form-label d-block">Patient Balance</label>
+                <div id="patient-balance" class="fw-semibold text-primary">₹ 0.00</div>
+              </div>
+
+              <div class="col-md-3">
+                <label class="form-label" for="{{ header_form.paid_amount.id_for_label }}">Amount Paid</label>
+                {{ header_form.paid_amount }}
+                <div class="form-text">
+                  <label class="d-inline-flex align-items-center gap-2">
+                    <input type="checkbox" id="pay_full" class="form-check-input" checked>
+                    Mark fully paid
+                  </label>
+                </div>
+              </div>
+
+              <div class="col-md-3">
+                <label class="form-label" for="{{ header_form.payment_method.id_for_label }}">Method</label>
+                {{ header_form.payment_method }}
+              </div>
+            </div>
+          </div>
+
+          <div class="card-footer d-flex justify-content-end gap-2">
+            {% if is_edit %}
+              <a class="btn btn-light" href="{% url 'bill_receipt' bill.pk %}"><i class="fa fa-ban me-1"></i>Cancel</a>
+            {% else %}
+              <a class="btn btn-light" href="{% url 'service_bill_list' %}"><i class="fa fa-ban me-1"></i>Cancel</a>
+            {% endif %}
+            <button class="btn btn-primary"><i class="fa fa-save me-1"></i>Save Bill</button>
+          </div>
+        </div>
+      </form>
+    </div>
+
+    <div class="col-md-12">
+      <div id="previous-bills" class="mt-4 d-print-none"></div>
+    </div>
+
+  </div>
+</div>
+
+<!-- Empty-row template -->
+<template id="empty-form-template">
+  <tr class="item-row">
+    {{ formset.empty_form.id }}
+    <td>
+      <div class="position-relative">
+        <select name="{{ formset.empty_form.service.html_name }}" class="form-select service-select" id="{{ formset.empty_form.service.id_for_label }}">
+          <option value="">---------</option>
+          {% for s in formset.empty_form.fields.service.queryset %}
+            <option value="{{ s.pk }}"
+                    data-price="{{ s.default_price|default_if_none:'0.00' }}"
+                    data-search="{{ s.name }} {{ s.code }}">
+              {{ s.name }}
+            </option>
+
+          {% endfor %}
+        </select>
+        <div class="search-dropdown bg-light text-dark"></div>
+      </div>
+    </td>
+    <td>{{ formset.empty_form.quantity }}</td>
+    <td>{{ formset.empty_form.unit_price }}<div class="form-text small">Auto-filled & read-only</div></td>
+    <td class="text-end fw-semibold"><span class="line-total">₹ 0.00</span></td>
+    <td class="text-center">
+      {% if formset.empty_form.DELETE %}{{ formset.empty_form.DELETE.as_hidden }}{% endif %}
+      <button type="button" class="btn btn-sm btn-outline-danger remove-row" title="Remove row"><i class="fa fa-times"></i></button>
+    </td>
+  </tr>
+</template>
+
+<script>
+document.addEventListener('DOMContentLoaded', function(){
+  const tbody = document.getElementById('items-body');
+  const tmpl  = document.getElementById('empty-form-template').innerHTML;
+  const totalForms = document.getElementById('id_{{ formset.prefix }}-TOTAL_FORMS');
+  const taxInput  = document.getElementById('{{ header_form.tax_amount.id_for_label }}') || document.querySelector('[name="{{ header_form.tax_amount.html_name }}"]');
+  const discInput = document.getElementById('{{ header_form.discount_amount.id_for_label }}') || document.querySelector('[name="{{ header_form.discount_amount.html_name }}"]');
+
+  const payAmount = document.getElementById('{{ header_form.paid_amount.id_for_label }}');
+  const payMethod = document.getElementById('{{ header_form.payment_method.id_for_label }}');
+  const payFull   = document.getElementById('pay_full');
+  const includeDue = document.getElementById('include_due');
+  const includeDueHint = document.getElementById('include_due_hint');
+
+  const patientSel = document.querySelector('.patient-select');
+  const patientBalEl = document.getElementById('patient-balance');
+  const toPayNowEl = document.getElementById('to-pay-now');
+  const billBalanceSummaryEl = document.getElementById('bill-balance-summary');
+  const prevBillsDiv = document.getElementById('previous-bills');
+
+  let patientBalance = 0;  // +ve = due, -ve = advance
+  let payDirty = false;
+
+  function toNum(v){ return parseFloat(String(v??'').replace(/,/g,'')) || 0; }
+  function fmt(n){ return '₹ ' + (isFinite(n)? Number(n) : 0).toFixed(2); }
+
+
+   // Load previous bills
+  async function loadPreviousBills() {
+    const opt = patientSel?.options[patientSel.selectedIndex];
+    if (!opt || !opt.value || !prevBillsDiv) { if (prevBillsDiv) prevBillsDiv.innerHTML=''; return; }
+    try {
+      const res = await fetch(`/api/patients/${opt.value}/bills/`);
+      const data = await res.json();
+      const rows = (data.bills || []).sort((a,b)=> new Date(b.date) - new Date(a.date));
+
+      if (!rows.length){
+        prevBillsDiv.innerHTML = `<div class="card shadow-sm"><div class="card-body">
+          <h6 class="text-muted mb-2"><i class="fa fa-history me-1"></i> Previous Bills</h6>
+          <div class="text-muted small">No previous bills.</div></div></div>`;
+        return;
+      }
+
+      let html = `<div class="card shadow-sm"><div class="card-body">
+        <h6 class="text-muted mb-2"><i class="fa fa-history me-1"></i> Previous Bills</h6>
+        <div class="table-responsive"><table class="table table-sm align-middle">
+        <thead><tr><th>Date</th><th>INV No</th><th>Type</th>
+        <th class="text-end">Total</th><th class="text-end">Paid</th></tr></thead><tbody>`;
+
+      for (const r of rows) {
+        const d = r.bill_date ? new Date(r.bill_date) : null;
+        const formattedDate = d ? `${String(d.getDate()).padStart(2,'0')}-${String(d.getMonth()+1).padStart(2,'0')}-${d.getFullYear()}` : '';
+        html += `<tr>
+          <td>${formattedDate}</td>
+          <td><a href="/bills/${r.id}/receipt/">${r.bill_number}</a></td>
+          <td>${r.bill_type}</td>
+          <td class="text-end">${fmt(parseFloat(r.total_amount))}</td>
+          <td class="text-end">${fmt(parseFloat(r.paid_amount))}</td>
+        </tr>`;
+      }
+
+      html += `</tbody></table></div></div></div>`;
+      prevBillsDiv.innerHTML = html;
+
+    } catch (e) {
+      prevBillsDiv.innerHTML = `<div class="alert alert-warning">Couldn’t load previous bills.</div>`;
+      console.error(e);
+    }
+  }
+
+  // Searchable select functionality
+  function makeSearchableSelect(select, options = {}) {
+    if (!select) return;
+
+    const wrapper = select.parentElement;
+    const dropdown = wrapper.querySelector('.search-dropdown');
+    if (!dropdown) return;
+
+    let isOpen = false;
+    let allOptions = Array.from(select.options).slice(1); // Skip empty option
+    let filteredOptions = [...allOptions];
+    let selectedIndex = -1;
+
+    function showDropdown() {
+      if (isOpen) return;
+      isOpen = true;
+      dropdown.style.display = 'block';
+      dropdown.innerHTML = `
+        <div class="search-input">
+          <input type="text" class="form-control form-control-sm" placeholder="${options.placeholder || 'Search...'}" autocomplete="off">
+        </div>
+        <div class="search-results"></div>
+      `;
+      
+      const searchInput = dropdown.querySelector('input');
+      const resultsDiv = dropdown.querySelector('.search-results');
+      
+      searchInput.focus();
+      renderResults();
+
+      searchInput.addEventListener('input', function() {
+        const query = this.value.toLowerCase();
+        filteredOptions = allOptions.filter(opt => {
+          const searchText = opt.getAttribute('data-search') || opt.textContent;
+          return searchText.toLowerCase().includes(query);
+        });
+        selectedIndex = -1;
+        renderResults();
+      });
+
+      searchInput.addEventListener('keydown', function(e) {
+        if (e.key === 'ArrowDown') {
+          e.preventDefault();
+          selectedIndex = Math.min(selectedIndex + 1, filteredOptions.length - 1);
+          updateSelection();
+        } else if (e.key === 'ArrowUp') {
+          e.preventDefault();
+          selectedIndex = Math.max(selectedIndex - 1, -1);
+          updateSelection();
+        } else if (e.key === 'Enter') {
+          e.preventDefault();
+          if (selectedIndex >= 0 && filteredOptions[selectedIndex]) {
+            selectOption(filteredOptions[selectedIndex]);
+          }
+        } else if (e.key === 'Escape') {
+          hideDropdown();
+        }
+      });
+
+      function renderResults() {
+        if (filteredOptions.length === 0) {
+          resultsDiv.innerHTML = '<div class="no-results">No results found</div>';
+        } else {
+          resultsDiv.innerHTML = filteredOptions.map((opt, idx) => 
+            `<div class="search-result-item" data-value="${opt.value}">${opt.textContent}</div>`
+          ).join('');
+        }
+        updateSelection();
+      }
+
+      function updateSelection() {
+        resultsDiv.querySelectorAll('.search-result-item').forEach((item, idx) => {
+          item.classList.toggle('selected', idx === selectedIndex);
+        });
+      }
+
+      resultsDiv.addEventListener('click', function(e) {
+        const item = e.target.closest('.search-result-item');
+        if (item) {
+          const option = allOptions.find(opt => opt.value === item.getAttribute('data-value'));
+          if (option) selectOption(option);
+        }
+      });
+    }
+
+    function hideDropdown() {
+      isOpen = false;
+      dropdown.style.display = 'none';
+      selectedIndex = -1;
+    }
+
+    function selectOption(option) {
+      select.value = option.value;
+      select.dispatchEvent(new Event('change'));
+      hideDropdown();
+    }
+
+    // Show dropdown when select is clicked
+    select.addEventListener('mousedown', function(e) {
+      e.preventDefault();
+      showDropdown();
+    });
+
+    select.addEventListener('focus', showDropdown);
+
+    // Hide dropdown when clicking outside
+    document.addEventListener('click', function(e) {
+      if (!wrapper.contains(e.target)) {
+        hideDropdown();
+      }
+    });
+  }
+
+
+  // Balance labels
+  function setBalanceLabels() {
+    const labelText = patientBalance < 0
+      ? `Advance ${fmt(Math.abs(patientBalance)).replace('₹ ', '₹ ')}`
+      : `Due ${fmt(patientBalance)}`;
+    if (patientBalEl) patientBalEl.textContent = labelText;
+    if (billBalanceSummaryEl) billBalanceSummaryEl.innerHTML =
+      `<span class="badge ${patientBalance<0?'bg-success-subtle text-success border border-success':'bg-warning-subtle text-warning border border-warning'}">
+         <i class="fa ${patientBalance<0?'fa-level-up':'fa-level-down'} me-1"></i>${labelText}
+       </span>`;
+
+    if (includeDue) {
+      includeDue.checked = (patientBalance > 0);
+      includeDue.disabled = (patientBalance <= 0);
+      if (includeDueHint) {
+        includeDueHint.textContent = patientBalance > 0
+          ? `Adds previous due (${fmt(patientBalance)}) to this payment.`
+          : `No previous due to add.`;
+      }
+    }
+  }
+
+  async function updatePatientBalance() {
+    const opt = patientSel?.options[patientSel.selectedIndex];
+    if (!opt || !opt.value){
+      patientBalance = 0; setBalanceLabels();
+      if (prevBillsDiv) prevBillsDiv.innerHTML='';
+      
+      // Clear patient details
+      const detailsEl = document.getElementById('patient-details');
+      if (detailsEl) detailsEl.innerHTML = '';
+      return;
+    }
+
+    // Show patient details
+    const detailsEl = document.getElementById('patient-details');
+    if (detailsEl) {
+      const details = [];
+      if (opt.dataset.age) details.push(`Age: ${opt.dataset.age}`);
+      if (opt.dataset.gender) details.push(`Gender: ${opt.dataset.gender}`);
+      if (opt.dataset.phone) details.push(`Phone: ${opt.dataset.phone}`);
+      if (opt.dataset.file) details.push(`File #: ${opt.dataset.file}`);
+      detailsEl.innerHTML = details.join(' | ');
+    }
+
+    try {
+      const res = await fetch(`/api/patients/${opt.value}/balance/`);
+      const data = await res.json();
+      patientBalance = parseFloat(data.balance || '0') || 0;
+    } catch(_) {
+      patientBalance = parseFloat(opt.dataset.balance || '0') || 0;
+    }
+    setBalanceLabels();
+    loadPreviousBills();
+  }
+
+  // Row binding
+  function bindRow(row){
+  // basic styling
+  row.querySelectorAll('select').forEach(s=>s.classList.add('form-select'));
+  row.querySelectorAll('input[type="number"],input[type="text"]').forEach(i=>i.classList.add('form-control'));
+
+  const qty        = row.querySelector('input[name$="-quantity"]');
+  const unit       = row.querySelector('input[name$="-unit_price"]');
+  const delField   = row.querySelector('input[name$="-DELETE"]');
+  const rmBtn      = row.querySelector('.remove-row');
+  const lineLbl    = row.querySelector('.line-total');
+  const serviceSel = row.querySelector('select[name$="-service"]');
+
+  // --- helpers ---
+  const getPriceFromOption = (opt) => {
+    if (!opt) return 0;
+    // prefer data-price; tolerate data-default-price
+    const raw = opt.dataset.price ?? opt.dataset.defaultPrice ?? opt.getAttribute('data-price') ?? opt.getAttribute('data-default-price') ?? '0';
+    const p = parseFloat(raw);
+    return isNaN(p) ? 0 : p;
+  };
+
+  const recalcLine = () => {
+    const q = Math.max(0, toNum(qty?.value));
+    const u = toNum(unit?.value);
+    if (lineLbl) lineLbl.textContent = fmt(q * u);
+    recalcTotals();
+  };
+
+  // Apply default price from selected service.
+  // If force=true -> always overwrite (used on change).
+  // If force=false -> only set when unit is empty/zero (preserves stored price on edit).
+  const applyDefaultPrice = (force=false) => {
+    if (!serviceSel || !unit) return;
+    const price = getPriceFromOption(serviceSel.selectedOptions?.[0]);
+    const current = toNum(unit.value);
+    if (force || !unit.value || current === 0) {
+      unit.value = price.toFixed(2);
+    }
+    if (qty && (!qty.value || toNum(qty.value) <= 0)) qty.value = 1;
+    recalcLine();
+  };
+
+  // --- lock unit price ---
+  if (unit) {
+    unit.readOnly = true;
+    unit.setAttribute('readonly', 'readonly');
+    unit.classList.add('bg-light');
+    unit.setAttribute('inputmode','decimal');
+  }
+
+  // --- events ---
+  serviceSel?.addEventListener('change', () => applyDefaultPrice(true));
+  qty?.addEventListener('input', recalcLine);
+
+  // Initial prefill: only if unit is empty/zero (don’t clobber existing prices on edit)
+  applyDefaultPrice(false);
+
+  // Remove row
+  rmBtn?.addEventListener('click', (e)=>{
+    e.preventDefault();
+    const idField = row.querySelector('input[name$="-id"]');
+    if (delField && idField && idField.value){
+      delField.checked = true;
+      row.style.display = 'none';
+    } else {
+      row.remove();
+      // adjust TOTAL_FORMS if you’re adding/removing client-side
+      if (typeof totalForms !== 'undefined' && totalForms) {
+        totalForms.value = String(Math.max(0, (parseInt(totalForms.value||'0') - 1)));
+      }
+    }
+    recalcTotals();
+  });
+
+  // Make service select searchable
+  makeSearchableSelect(serviceSel, { placeholder: 'Search services...' });
+}
+
+
+  function addRow(){
+    const idx = parseInt(totalForms.value||'0');
+    const html = tmpl.replace(/__prefix__/g, idx);
+    const frag = document.createElement('tbody'); 
+    frag.innerHTML = html.trim();
+    const row = frag.firstElementChild; 
+    tbody.appendChild(row);
+    totalForms.value = String(idx+1);
+    bindRow(row);
+  }
+
+  // To-Pay: add DUE (optional), subtract ADVANCE
+  function calcToPay(grand){
+    if (patientBalance < 0) {
+      const credit = Math.abs(patientBalance);
+      return Math.max(grand - credit, 0);
+    }
+    if (patientBalance > 0 && includeDue && includeDue.checked) {
+      return grand + patientBalance;
+    }
+    return grand;
+  }
+
+  function recalcTotals(){
+    let subtotal = 0;
+    tbody.querySelectorAll('.item-row').forEach(row=>{
+      if (row.style.display==='none') return;
+      const del = row.querySelector('input[name$="-DELETE"]'); 
+      if (del && del.checked) return;
+      const q = toNum(row.querySelector('input[name$="-quantity"]')?.value);
+      const u = toNum(row.querySelector('input[name$="-unit_price"]')?.value);
+      subtotal += q*u;
+    });
+    
+    const tax  = toNum(taxInput?.value);
+    const disc = toNum(discInput?.value);
+    const grand = subtotal + tax - disc;
+
+    document.getElementById('subtotal').textContent   = fmt(subtotal);
+    document.getElementById('grandtotal').textContent = fmt(grand);
+
+    const toPay = calcToPay(grand);
+    if (toPayNowEl) toPayNowEl.textContent = fmt(toPay);
+
+    // Payment auto-fill/lock for "Mark fully paid" checkbox
+    if (payFull && payAmount){
+      if (payFull.checked){
+        if (!payDirty) payAmount.value = toPay.toFixed(2);
+        payAmount.readOnly = true;
+        payAmount.classList.add('bg-light');
+      } else {
+        payAmount.readOnly = false;
+        payAmount.classList.remove('bg-light');
+      }
+    }
+
+    // Method required if paying > 0
+    if (payMethod && payAmount){
+      const paying = toNum(payAmount.value) > 0;
+      payMethod.required = paying;
+    }
+  }
+
+  // Initialize existing rows
+  tbody.querySelectorAll('.item-row').forEach(bindRow);
+
+  // Make patient select searchable
+  makeSearchableSelect(patientSel, { placeholder: 'Search patients...' });
+
+  // Add row button
+  document.getElementById('add-row')?.addEventListener('click', function(e){ 
+    e.preventDefault(); 
+    addRow(); 
+  });
+
+  // Event listeners for calculations
+  taxInput && taxInput.addEventListener('input', recalcTotals);
+  discInput && discInput.addEventListener('input', recalcTotals);
+  includeDue && includeDue.addEventListener('change', recalcTotals);
+
+  // Payment handling
+  if (payFull){
+    payFull.addEventListener('change', ()=>{ 
+      payDirty = false; 
+      recalcTotals(); 
+    });
+  }
+  if (payAmount){
+    payAmount.addEventListener('input', ()=>{ payDirty = true; });
+    payAmount.addEventListener('focus', ()=>{ payDirty = true; });
+  }
+
+  // Patient selection handling
+  if (patientSel){
+    patientSel.addEventListener('change', async ()=>{ 
+      payDirty = false; 
+      await updatePatientBalance(); 
+      recalcTotals(); 
+    });
+    updatePatientBalance().then(()=>{ recalcTotals(); });
+  } else {
+    recalcTotals();
+  }
+});
+</script>
+
+{% endblock %}

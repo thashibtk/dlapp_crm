@@ -1,0 +1,79 @@
+{% extends 'base.html' %}
+{% load roles %}
+{% block content %}
+<div class="container-fluid default-dashboard">
+  <div class="row">
+
+    <!-- Header -->
+    <div class="col-12 project-list">
+      <div class="card">
+        <div class="row align-items-center">
+          <div class="col-6 p-0">
+            <ul class="nav nav-tabs border-tab d-flex" role="tablist">
+              <li class="nav-item">
+                <a class="nav-link active" href="#" role="tab" aria-selected="true">
+                  <i class="fa fa-user me-2"></i>My Profile
+                </a>
+              </li>
+            </ul>
+          </div>
+          <div class="col-6 p-0 d-flex justify-content-end align-items-center gap-2">
+            <a class="btn btn-primary" href="{% url 'my_profile_password' %}">
+              <i class="fa fa-key me-1"></i>Change Password
+            </a>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Cards -->
+    <div class="col-lg-7">
+      <div class="card p-3 h-100">
+        <h6 class="text-muted mb-3"><i class="fa fa-id-card me-1"></i>Account</h6>
+        <div class="row g-3">
+          <div class="col-md-6"><b>Name</b><div>{{ u.get_full_name|default:u.username }}</div></div>
+          <div class="col-md-6"><b>Username</b><div class="mono">{{ u.username }}</div></div>
+          <div class="col-md-6"><b>Email</b><div>{{ u.email|default:"—" }}</div></div>
+          <div class="col-md-6"><b>Role</b>
+            <div>
+              {% for g in u.groups.all %}
+                <span class="badge text-bg-secondary me-1">{{ g.name }}</span>
+              {% empty %}—{% endfor %}
+            </div>
+          </div>
+          <div class="col-md-6"><b>Joined</b><div>{{ u.date_joined|date:"d-m-Y h:i A" }}</div></div>
+          <div class="col-md-6"><b>Last login</b><div>{{ u.last_login|date:"d-m-Y h:i A"|default:"—" }}</div></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="col-lg-5">
+        <div class="card p-3 h-100 d-flex flex-column">
+            <h6 class="text-muted mb-3"><i class="fa fa-info-circle me-1"></i>Profile</h6>
+            <div class="flex-grow-1">
+            {% if profile %}
+                <div class="row g-3">
+                {% if profile.employee_id %}
+                    <div class="col-12"><b>Employee ID</b><div class="mono">{{ profile.employee_id }}</div></div>
+                {% endif %}
+                {% if profile.phone %}
+                    <div class="col-md-6"><b>Phone</b><div>{{ profile.phone }}</div></div>
+                {% endif %}
+                {% if profile.designation %}
+                    <div class="col-md-6"><b>Designation</b><div>{{ profile.designation }}</div></div>
+                {% endif %}
+                </div>
+            {% else %}
+                <div class="text-muted">No extra profile details.</div>
+            {% endif %}
+            </div>
+            <hr class="mt-auto mb-3">
+            <a class="btn btn-outline-primary" href="{% url 'my_profile_password' %}">
+                <i class="fa fa-key me-1"></i>Change Password
+                </a>
+        </div>
+        </div>
+
+  </div>
+</div>
+{% endblock %}

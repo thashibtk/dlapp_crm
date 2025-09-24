@@ -1,0 +1,55 @@
+{% load static %}
+<style>
+  /* Custom styles for the message component */
+  .message-container {
+    position: fixed;
+    top: 20px; /* Distance from the top */
+    right: 20px; /* Changed from 'left' to 'right' */
+    z-index: 1060; /* Higher than Bootstrap's default modals (1050) to ensure visibility */
+    display: flex;
+    flex-direction: column; /* Stack multiple messages vertically */
+    gap: 10px; /* Space between multiple messages */
+  }
+
+  /* Optional: Enhance alert appearance if needed, otherwise Bootstrap defaults are good */
+  .message-container .alert {
+    min-width: 250px; /* Ensure alerts are readable */
+    max-width: 400px; /* Prevent alerts from getting too wide */
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1); /* Subtle shadow for depth */
+  }
+</style>
+
+<div id="messageContainer" class="message-container">
+  {% if messages %}
+    {% for message in messages %}
+      <div class="alert alert-dismissible fade show
+        {% if message.tags == 'error' %}alert-danger
+        {% elif message.tags == 'success' %}alert-success
+        {% elif message.tags == 'warning' %}alert-warning
+        {% elif message.tags == 'info' %}alert-info
+        {% else %}alert-secondary{% endif %}" role="alert">
+        {{ message }}
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+      </div>
+    {% endfor %}
+  {% endif %}
+</div>
+
+<script>
+  document.addEventListener('DOMContentLoaded', function() {
+    const messageContainer = document.getElementById('messageContainer');
+    if (messageContainer) {
+      // Find all alerts within the container
+      const alerts = messageContainer.querySelectorAll('.alert');
+
+      alerts.forEach(alertElement => {
+        // Set a timeout to remove the 'show' class and then the element itself
+        setTimeout(() => {
+          // Trigger Bootstrap's collapse/fade-out animation
+          const bsAlert = new bootstrap.Alert(alertElement);
+          bsAlert.close();
+        }, 3000); // 3000 milliseconds = 3 seconds
+      });
+    }
+  });
+</script>

@@ -1,0 +1,572 @@
+{% extends 'base.html' %}
+{% load static %}
+{% load roles %}
+{% block content %}
+
+<style>
+  .kpi-card{display:flex;align-items:center;gap:12px;padding:16px;border:1px solid #eee;border-radius:.75rem;background:#fff;min-height:96px}
+  .kpi-card .icon-wrap{width:44px;height:44px;border-radius:50%;display:flex;align-items:center;justify-content:center;background:rgba(43,95,96,.2)}
+  .kpi-card .icon-wrap i{font-size:18px}
+  .kpi-card .label{font-size:.825rem;color:#6c757d}
+  .kpi-card .value{font-size:1.25rem;font-weight:700}
+  .mini-table thead th{position:sticky;top:0;background:#f8f9fa}
+  .badge-soft{background:#eef5ff;border:1px solid #cfe2ff;color:#1f57c3}
+  .mono{font-variant-numeric:tabular-nums}
+  @media (max-width: 767px){.kpi-card{padding:14px}}
+  body.dark-only .kpi-card{background:#171818;border:1px solid #172121}
+  body.dark-only .mini-table thead th{background:#171818}
+</style>
+
+<div class="container-fluid default-dashboard">
+  <div class="row mb-2">
+
+
+    
+    <!-- Header -->
+    <div class="col-12 project-list">
+      <div class="card">
+        <div class="row align-items-center">
+          <div class="col-12 col-lg-5 p-0">
+            <ul class="nav nav-tabs border-tab d-flex" role="tablist">
+              <li class="nav-item">
+                <a class="nav-link active" href="#" role="tab" aria-selected="true">
+                  <i class="fa fa-home me-2"></i>Dashboard
+                </a>
+              </li>
+            </ul>
+          </div>
+          <div class="col-12 col-lg-7 p-0 d-flex justify-content-lg-end justify-content-start align-items-center gap-2 flex-wrap mt-2 mt-lg-0">
+            {% if request.user|in_group:"Receptionist" or request.user|in_group:"Doctor" or request.user|in_group:"OperationsManager" or request.user|in_group:"CRO" %}
+              <a class="btn btn-outline-secondary flex-fill flex-lg-grow-0" href="{% url 'appointment_create' %}">
+                <i class="fa fa-calendar-plus-o me-1"></i>
+                <span class="d-none d-sm-inline">New </span>Appointment
+              </a>
+            {% endif %}
+            {% if request.user|in_group:"Doctor" or request.user|in_group:"OperationsManager" or request.user|in_group:"Receptionist" %}
+              <a class="btn btn-outline-primary flex-fill flex-lg-grow-0" href="{% url 'service_bill_create' %}">
+                <i class="fa fa-stethoscope me-1"></i>
+                <span class="d-none d-sm-inline">Service </span>Bill
+              </a>
+            {% endif %}
+            {% if request.user|in_group:"PharmacyManager" or request.user|in_group:"OperationsManager" or request.user|in_group:"Receptionist" %}
+              <a class="btn btn-primary flex-fill flex-lg-grow-0" href="{% url 'pharmacy_sale_create' %}">
+                <i class="fa fa-medkit me-1"></i>
+                <span class="d-none d-sm-inline">Pharmacy </span>Sale
+              </a>
+            {% endif %}
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Filters -->
+    <div class="col-12">
+      <form class="card p-3 mb-3 d-print-none" method="get" id="dashFilterForm">
+        <div class="row g-3 align-items-end">
+          <!-- Quick Range Section -->
+          <div class="col-12 col-lg-5">
+            <label class="form-label mb-1 small text-muted">
+              <i class="fa fa-bolt me-1"></i>Quick range
+            </label>
+
+            <!-- Keep currently selected range here -->
+            <input type="hidden" name="range" id="rangeField" value="{{ selected.range|default:'' }}">
+
+            <div class="d-grid d-sm-flex gap-2">
+              <button
+                class="btn btn-outline-secondary {% if selected.range == 'today' %}active{% endif %}"
+                type="button" data-range="today" aria-pressed="{% if selected.range == 'today' %}true{% else %}false{% endif %}">
+                <i class="fa fa-calendar me-1"></i>
+                <span class="d-none d-sm-inline">Today</span><span class="d-sm-none">Today</span>
+              </button>
+
+              <button
+                class="btn btn-outline-secondary {% if selected.range == 'yesterday' %}active{% endif %}"
+                type="button" data-range="yesterday" aria-pressed="{% if selected.range == 'yesterday' %}true{% else %}false{% endif %}">
+                <i class="fa fa-calendar-o me-1"></i>
+                <span class="d-none d-sm-inline">Yesterday</span><span class="d-sm-none">Yesterday</span>
+              </button>
+
+              <button
+                class="btn btn-outline-secondary {% if selected.range == '7d' %}active{% endif %}"
+                type="button" data-range="7d" aria-pressed="{% if selected.range == '7d' %}true{% else %}false{% endif %}">
+                <i class="fa fa-calendar me-1"></i>
+                <span class="d-none d-sm-inline">Last 7 days</span><span class="d-sm-none">7 days</span>
+              </button>
+
+              <button
+                class="btn btn-outline-secondary {% if selected.range == 'month' %}active{% endif %}"
+                type="button" data-range="month" aria-pressed="{% if selected.range == 'month' %}true{% else %}false{% endif %}">
+                <i class="fa fa-calendar me-1"></i>
+                <span class="d-none d-sm-inline">This month</span><span class="d-sm-none">Month</span>
+              </button>
+            </div>
+          </div>
+
+          <!-- Date Range Section -->
+          <div class="col-12 col-sm-6 col-lg-2">
+            <label class="form-label mb-1 small text-muted">
+              <i class="fa fa-sign-in me-1"></i>From
+            </label>
+            <input type="date" class="form-control" name="from" value="{{ selected.from|date:'Y-m-d' }}"
+                  max="{{ selected.to|date:'Y-m-d' }}">
+          </div>
+
+          <div class="col-12 col-sm-6 col-lg-2">
+            <label class="form-label mb-1 small text-muted">
+              <i class="fa fa-sign-out me-1"></i>To
+            </label>
+            <input type="date" class="form-control" name="to" value="{{ selected.to|date:'Y-m-d' }}"
+                  min="{{ selected.from|date:'Y-m-d' }}">
+          </div>
+
+          <!-- Action Buttons -->
+          <div class="col-12 col-lg-3">
+            <div class="d-flex gap-2">
+              <button class="btn btn-outline-secondary flex-fill" type="submit">
+                <i class="fa fa-filter me-2"></i>Filter
+              </button>
+              <a class="btn btn-light flex-fill" href="{% url 'dashboard' %}">
+                <i class="fa fa-refresh me-2"></i>Clear
+              </a>
+            </div>
+          </div>
+        </div>
+      </form>
+    </div>
+
+    <!-- KPI grid -->
+    <div class="col-12">
+      <div class="row row-cols-1 row-cols-md-2 row-cols-xl-4 g-3">
+
+        {% if request.user|in_group:"Doctor" or request.user|in_group:"OperationsManager" %}
+          <div class="col"><div class="kpi-card h-100">
+            <div class="icon-wrap"><i class="fa fa-clock-o"></i></div>
+            <div><div class="label">{{ kpi_day_label }} Appointments</div><div class="value mono">{{ summary.today_appts|default:0 }}</div></div>
+          </div></div>
+
+          <div class="col"><div class="kpi-card h-100">
+            <div class="icon-wrap"><i class="fa fa-inr"></i></div>
+            <div><div class="label">{{ kpi_day_label }} Collection</div><div class="value mono">₹ {{ summary.today_collection|default:"0.00" }}</div></div>
+          </div></div>
+
+          <div class="col"><div class="kpi-card h-100">
+            <div class="icon-wrap"><i class="fa fa-calendar"></i></div>
+            <div><div class="label">{{ kpi_billed_label }}</div><div class="value mono">₹ {{ summary.month_billed|default:"0.00" }}</div></div>
+          </div></div>
+
+          <div class="col"><div class="kpi-card h-100">
+            <div class="icon-wrap"><i class="fa fa-line-chart"></i></div>
+            <div><div class="label">Lead Conversion</div><div class="value mono">{{ summary.conversion_rate|default:"0" }}%</div></div>
+          </div></div>
+
+          <div class="col"><div class="kpi-card h-100">
+            <div class="icon-wrap"><i class="fa fa-warning"></i></div>
+            <div><div class="label">Low Stock Items</div><div class="value mono">{{ summary.low_stock_count|default:0 }}</div></div>
+          </div></div>
+
+          <div class="col"><div class="kpi-card h-100">
+            <div class="icon-wrap"><i class="fa fa-file-text-o"></i></div>
+            <div><div class="label">Pending Expenses</div><div class="value mono">{{ summary.pending_exp_count|default:0 }} • ₹ {{ summary.pending_exp_amount|default:"0.00" }}</div></div>
+          </div></div>
+
+          <div class="col"><div class="kpi-card h-100">
+            <div class="icon-wrap"><i class="fa fa-bullhorn"></i></div>
+            <div><div class="label">Open Leads</div><div class="value mono">{{ summary.open_leads_count|default:0 }}</div></div>
+          </div></div>
+        {% endif %}
+
+        {% if request.user|in_group:"PharmacyManager" and not request.user|in_group:"OperationsManager" and not request.user|in_group:"Doctor" %}
+          <div class="col"><div class="kpi-card h-100">
+            <div class="icon-wrap"><i class="fa fa-medkit"></i></div>
+            <div><div class="label">{{ kpi_billed_label }}</div><div class="value mono">₹ {{ summary.month_billed|default:"0.00" }}</div></div>
+          </div></div>
+          <div class="col"><div class="kpi-card h-100">
+            <div class="icon-wrap"><i class="fa fa-warning"></i></div>
+            <div><div class="label">Low Stock Items</div><div class="value mono">{{ summary.low_stock_count|default:0 }}</div></div>
+          </div></div>
+          <div class="col"><div class="kpi-card h-100">
+            <div class="icon-wrap"><i class="fa fa-file-text-o"></i></div>
+            <div><div class="label">Pending Expenses</div><div class="value mono">{{ summary.pending_exp_count|default:0 }} • ₹ {{ summary.pending_exp_amount|default:"0.00" }}</div></div>
+          </div></div>
+        {% endif %}
+
+        {% if request.user|in_group:"CRO" and not request.user|in_group:"OperationsManager" and not request.user|in_group:"Doctor" %}
+          <div class="col"><div class="kpi-card h-100">
+            <div class="icon-wrap"><i class="fa fa-bullhorn"></i></div>
+            <div><div class="label">Open Leads</div><div class="value mono">{{ summary.open_leads_count|default:0 }}</div></div>
+          </div></div>
+          <div class="col"><div class="kpi-card h-100">
+            <div class="icon-wrap"><i class="fa fa-line-chart"></i></div>
+            <div><div class="label">Lead Conversion</div><div class="value mono">{{ summary.conversion_rate|default:"0" }}%</div></div>
+          </div></div>
+          <div class="col"><div class="kpi-card h-100">
+            <div class="icon-wrap"><i class="fa fa-clock-o"></i></div>
+            <div><div class="label">{{ kpi_day_label }} Appointments</div><div class="value mono">{{ summary.today_appts|default:0 }}</div></div>
+          </div></div>
+        {% endif %}
+
+        {% if request.user|in_group:"Receptionist" and not request.user|in_group:"OperationsManager" and not request.user|in_group:"Doctor" %}
+          <div class="col"><div class="kpi-card h-100">
+            <div class="icon-wrap"><i class="fa fa-clock-o"></i></div>
+            <div><div class="label">{{ kpi_day_label }} Appointments</div><div class="value mono">{{ summary.today_appts|default:0 }}</div></div>
+          </div></div>
+          <div class="col"><div class="kpi-card h-100">
+            <div class="icon-wrap"><i class="fa fa-inr"></i></div>
+            <div><div class="label">{{ kpi_day_label }} Collection</div><div class="value mono">₹ {{ summary.today_collection|default:"0.00" }}</div></div>
+          </div></div>
+          <div class="col"><div class="kpi-card h-100">
+            <div class="icon-wrap"><i class="fa fa-calendar"></i></div>
+            <div><div class="label">{{ kpi_billed_label }}</div><div class="value mono">₹ {{ summary.month_billed|default:"0.00" }}</div></div>
+          </div></div>
+        {% endif %}
+
+      </div>
+    </div>
+
+    {% if request.user|in_group:"Doctor" or request.user|in_group:"OperationsManager" or request.user|in_group:"CRO" %}
+      <div class="col-12 mt-3">
+        <div class="row g-3">
+          {% if request.user|in_group:"Doctor" or request.user|in_group:"OperationsManager" %}
+            <div class="col-lg-9">
+              <div class="card p-3 h-100">
+                <div class="d-flex justify-content-between align-items-center mb-2">
+                  <h6 class="text-muted mb-0">
+                    <i class="fa fa-area-chart me-1"></i>Revenue — {{ kpi_range_label }}
+                  </h6>
+                </div>
+                <canvas id="revenueChart" height="250"></canvas>
+              </div>
+            </div>
+            <div class="col-lg-3">
+              <div class="card p-3 h-100">
+                <h6 class="text-muted mb-2"><i class="fa fa-pie-chart me-1"></i>Leads (Open vs Converted)</h6>
+                <canvas id="leadsChart" height="110"></canvas>
+              </div>
+            </div>
+          {% else %}
+            <div class="col-3">
+              <div class="card p-3 h-100">
+                <h6 class="text-muted mb-2"><i class="fa fa-pie-chart me-1"></i>Leads (Open vs Converted)</h6>
+                <canvas id="leadsChart" height="110"></canvas>
+              </div>
+            </div>
+
+            <div class="col-5">
+              <div class="card p-3 h-100">
+                <div class="d-flex justify-content-between align-items-center">
+                  <h6 class="text-muted mb-0"><i class="fa fa-calendar-check-o me-1"></i>Today's Upcoming Appointments</h6>
+                  <a class="small text-decoration-none" href="{% url 'appointment_list' %}">View all</a>
+                </div>
+
+                <div class="table-responsive mt-2 mini-table" style="max-height: 320px; overflow:auto;">
+                  <table class="table table-sm align-middle mb-0">
+                    <thead class="bg-light"><tr><th>Time</th><th>Patient</th><th>Doctor</th><th>Status</th></tr></thead>
+                    <tbody>
+                      {% for a in upcoming %}
+                        <tr>
+                          <td class="mono">{{ a.appointment_date|date:"H:i" }}</td>
+                          <td><a class="text-decoration-none" href="{% url 'patient_detail' a.patient.pk %}">{{ a.patient.name }}</a></td>
+                          <td>{% if a.assigned_doctor %}{{ a.assigned_doctor.get_full_name|default:a.assigned_doctor.username }}{% else %}&mdash;{% endif %}</td>
+                          <td><span class="badge badge-soft">{{ a.get_status_display }}</span></td>
+                        </tr>
+                      {% empty %}
+                        <tr><td colspan="4" class="text-center text-muted py-3">No upcoming slots today.</td></tr>
+                      {% endfor %}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            </div>
+
+            <div class="col-4">
+              <div class="card p-3 h-100">
+                <div class="d-flex justify-content-between align-items-center">
+                  <h6 class="text-muted mb-0"><i class="fa fa-file-text-o me-1"></i>Recent Bills</h6>
+                </div>
+                <div class="table-responsive mt-2 mini-table" style="max-height: 280px; overflow:auto;">
+                  <table class="table table-sm align-middle mb-0">
+                    <thead class="bg-light"><tr><th>#</th><th>Patient</th><th>Type</th><th class="text-end">Total</th></tr></thead>
+                    <tbody>
+                      {% for b in recent_bills %}
+                        {% if request.user|in_group:"PharmacyManager" and b.bill_type != 'pharmacy' %}
+                        {% else %}
+                          <tr>
+                            <td class="mono">{{ b.bill_number }}</td>
+                            <td>{{ b.patient.name }}</td>
+                            <td>
+                              {% if b.bill_type == 'service' %}
+                                <span class="badge text-bg-primary">Service</span>
+                              {% else %}
+                                <span class="badge text-bg-success">Pharmacy</span>
+                              {% endif %}
+                            </td>
+                            <td class="text-end mono">₹ {{ b.total_amount }}</td>
+                          </tr>
+                        {% endif %}
+                      {% empty %}
+                        <tr><td colspan="4" class="text-center text-muted py-3">No bills yet.</td></tr>
+                      {% endfor %}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            </div>
+
+          {% endif %}
+        </div>
+      </div>
+    {% endif %}
+
+    <!-- Panels -->
+    <div class="col-12 mt-3">
+      <div class="row row-cols-1 row-cols-lg-2 g-3">
+
+        {% if request.user|in_group:"Receptionist" or request.user|in_group:"Doctor" or request.user|in_group:"OperationsManager"%}
+          <div class="col">
+            <div class="card p-3 h-100">
+              <div class="d-flex justify-content-between align-items-center">
+                <h6 class="text-muted mb-0"><i class="fa fa-calendar-check-o me-1"></i>Today's Upcoming Appointments</h6>
+                <a class="small text-decoration-none" href="{% url 'appointment_list' %}">View all</a>
+              </div>
+              <div class="table-responsive mt-2 mini-table" style="max-height: 320px; overflow:auto;">
+                <table class="table table-sm align-middle mb-0">
+                  <thead class="bg-light"><tr><th>Time</th><th>Patient</th><th>Doctor</th><th>Status</th></tr></thead>
+                  <tbody>
+                    {% for a in upcoming %}
+                      <tr>
+                        <td class="mono">{{ a.appointment_date|date:"H:i" }}</td>
+                        <td><a class="text-decoration-none" href="{% url 'patient_detail' a.patient.pk %}">{{ a.patient.name }}</a></td>
+                        <td>{% if a.assigned_doctor %}{{ a.assigned_doctor.get_full_name|default:a.assigned_doctor.username }}{% else %}&mdash;{% endif %}</td>
+                        <td><span class="badge badge-soft">{{ a.get_status_display }}</span></td>
+                      </tr>
+                    {% empty %}
+                      <tr><td colspan="4" class="text-center text-muted py-3">No upcoming slots today.</td></tr>
+                    {% endfor %}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        {% endif %}
+
+        {% if request.user|in_group:"OperationsManager" or request.user|in_group:"Doctor" or request.user|in_group:"Receptionist" or request.user|in_group:"PharmacyManager" %}
+          <div class="col">
+            <div class="card p-3 h-100">
+              <div class="d-flex justify-content-between align-items-center">
+                <h6 class="text-muted mb-0"><i class="fa fa-file-text-o me-1"></i>Recent Bills</h6>
+              </div>
+              <div class="table-responsive mt-2 mini-table" style="max-height: 320px; overflow:auto;">
+                <table class="table table-sm align-middle mb-0">
+                  <thead class="bg-light"><tr><th>#</th><th>Patient</th><th>Type</th><th class="text-end">Total</th></tr></thead>
+                  <tbody>
+                    {% for b in recent_bills %}
+                      {% if request.user|in_group:"PharmacyManager" and b.bill_type != 'pharmacy' %}
+                      {% else %}
+                        <tr>
+                          <td class="mono">{{ b.bill_number }}</td>
+                          <td>{{ b.patient.name }}</td>
+                          <td>
+                            {% if b.bill_type == 'service' %}
+                              <span class="badge text-bg-primary">Service</span>
+                            {% else %}
+                              <span class="badge text-bg-success">Pharmacy</span>
+                            {% endif %}
+                          </td>
+                          <td class="text-end mono">₹ {{ b.total_amount }}</td>
+                        </tr>
+                      {% endif %}
+                    {% empty %}
+                      <tr><td colspan="4" class="text-center text-muted py-3">No bills yet.</td></tr>
+                    {% endfor %}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        {% endif %}
+
+        {% if request.user|in_group:"PharmacyManager" or request.user|in_group:"OperationsManager" or request.user|in_group:"Doctor" %}
+          <div class="col">
+            <div class="card p-3 h-100">
+              <div class="d-flex justify-content-between align-items-center">
+                <h6 class="text-muted mb-0"><i class="fa fa-medkit me-1"></i>Low Stock</h6>
+                <a class="small text-decoration-none" href="{% url 'pharmacy_stock_list' %}">Manage</a>
+              </div>
+              <div class="table-responsive mt-2 mini-table" style="max-height: 320px; overflow:auto;">
+                <table class="table table-sm align-middle mb-0">
+                  <thead class="bg-light"><tr><th>Medicine</th><th class="text-end">Qty</th><th class="text-end">Min</th></tr></thead>
+                  <tbody>
+                    {% for s in low_stock %}
+                      <tr>
+                        <td>{{ s.medicine.name }}</td>
+                        <td class="text-end mono">{{ s.current_quantity }}</td>
+                        <td class="text-end mono">{{ s.medicine.minimum_stock_level }}</td>
+                      </tr>
+                    {% empty %}
+                      <tr><td colspan="3" class="text-center text-muted py-3">All good. 🎉</td></tr>
+                    {% endfor %}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        {% endif %}
+
+        {% if request.user|in_group:"OperationsManager" or request.user|in_group:"Doctor" %}
+          <div class="col">
+            <div class="card p-3 h-100">
+              <div class="d-flex justify-content-between align-items-center">
+                <h6 class="text-muted mb-0"><i class="fa fa-bullhorn me-1"></i>Recent Leads</h6>
+                <a class="small text-decoration-none" href="{% url 'lead_list' %}">View all</a>
+              </div>
+              <div class="table-responsive mt-2 mini-table" style="max-height: 320px; overflow:auto;">
+                <table class="table table-sm align-middle mb-0">
+                  <thead class="bg-light"><tr><th>Name</th><th>Source</th><th class="text-end">Status</th></tr></thead>
+                  <tbody>
+                    {% for l in recent_leads %}
+                      <tr>
+                        <td><a class="text-decoration-none" href="{% url 'lead_detail' l.pk %}">{{ l.name }}</a></td>
+                        <td>{% if l.lead_source %}{{ l.lead_source.name }}{% else %}&mdash;{% endif %}</td>
+                        <td class="text-end">
+                          {% if l.converted_patient %}
+                            <span class="badge text-bg-success">Converted</span>
+                          {% else %}
+                            <span class="badge text-bg-warning text-dark">Open</span>
+                          {% endif %}
+                        </td>
+                      </tr>
+                    {% empty %}
+                      <tr><td colspan="3" class="text-center text-muted py-3">No leads yet.</td></tr>
+                    {% endfor %}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        {% endif %}
+
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+<script>
+(function(){
+  {% if request.user|in_group:"Doctor" or request.user|in_group:"OperationsManager" %}
+  const rc = document.getElementById('revenueChart');
+  const revLabels = {{ chart_revenue.labels|default:"[]"|safe }};
+  const revValues = {{ chart_revenue.values|default:"[]"|safe }};
+  if (rc && revLabels.length) {
+    new Chart(rc, {
+      type: 'line',
+      data: { labels: revLabels, datasets: [{ label: 'Collections', data: revValues, tension:.3, fill:false }] },
+      options: {
+        plugins:{ legend:{ display:false } },
+        scales:{ y:{ ticks:{ callback:(v)=>'₹ '+v } } }
+      }
+    });
+  }
+  {% endif %}
+
+  {% if request.user|in_group:"Doctor" or request.user|in_group:"OperationsManager" or request.user|in_group:"CRO" %}
+  const lc = document.getElementById('leadsChart');
+  const leadsOpen = {{ chart_leads.open|default:"0" }};
+  const leadsConverted = {{ chart_leads.converted|default:"0" }};
+  if (lc) {
+    new Chart(lc, {
+      type: 'doughnut',
+      data: { labels: ['Open','Converted'], datasets: [{ data: [leadsOpen, leadsConverted] }] },
+      options: { plugins:{ legend:{ position:'bottom' } }, cutout:'60%' }
+    });
+  }
+  {% endif %}
+})();
+</script>
+
+<script>
+  // Sidebar highlighting
+  window.addEventListener("load", function () {
+    const currentPath = window.location.pathname.replace(/\/$/, "");
+    document.querySelectorAll(".sidebar-link").forEach(link => {
+      const linkPath = link.getAttribute("href").replace(/\/$/, "");
+      if (linkPath === currentPath) {
+        link.classList.add("active");
+        const li = link.closest("li.sidebar-list");
+        if (li) li.classList.add("active");
+        const submenu = link.closest("ul.sidebar-submenu");
+        if (submenu) {
+          submenu.style.display = "block";
+          submenu.closest("li.sidebar-list")?.classList.add("active");
+        }
+      }
+    });
+  });
+
+  // Filter: quick-range buttons + manual date range interplay
+  document.addEventListener('DOMContentLoaded', function(){
+    const form = document.getElementById('dashFilterForm');
+    if (!form) return;
+
+    const rangeField = document.getElementById('rangeField');
+    const fromInput  = form.querySelector('input[name="from"]');
+    const toInput    = form.querySelector('input[name="to"]');
+    const quickBtns  = form.querySelectorAll('[data-range]');
+
+    const clearActive = () => {
+      quickBtns.forEach(b => {
+        b.classList.remove('active');
+        b.setAttribute('aria-pressed','false');
+      });
+    };
+
+    // Initialize active state from server-provided hidden field
+    if (rangeField && rangeField.value) {
+      const current = form.querySelector(`[data-range="${rangeField.value}"]`);
+      if (current) {
+        current.classList.add('active');
+        current.setAttribute('aria-pressed','true');
+      }
+    }
+
+    // Clicking a quick range: set range, clear dates, toggle active, submit
+    quickBtns.forEach(btn => {
+      btn.addEventListener('click', () => {
+        if (!rangeField) return;
+        rangeField.value = btn.getAttribute('data-range');
+        if (fromInput) fromInput.value = '';
+        if (toInput)   toInput.value   = '';
+        clearActive();
+        btn.classList.add('active');
+        btn.setAttribute('aria-pressed','true');
+        form.submit();
+      });
+    });
+
+    // Changing dates: clear the quick range & button active state (NO submit)
+    const handleDateChange = () => {
+      if (!rangeField) return;
+      rangeField.value = '';
+      clearActive();
+
+      // Optional UX: keep min/max in sync to avoid invalid ranges
+      if (fromInput && toInput) {
+        if (fromInput.value && toInput.value && toInput.value < fromInput.value) {
+          // If user set "from" after "to", nudge "to" to match "from"
+          toInput.value = fromInput.value;
+        }
+        toInput.min = fromInput.value || '';
+        fromInput.max = toInput.value || '';
+      }
+      // Do NOT submit here — user will click the Filter button.
+    };
+
+    fromInput?.addEventListener('input', handleDateChange);
+    toInput?.addEventListener('input', handleDateChange);
+  });
+</script>
+
+{% endblock %}

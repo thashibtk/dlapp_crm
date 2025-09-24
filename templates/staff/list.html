@@ -1,0 +1,149 @@
+{% extends 'base.html' %}
+{% block content %}
+<style>
+  /* Adjusting the search filter within the flex container */
+  div.dataTables_wrapper div.dataTables_filter {
+    position: static;
+    top: auto;
+    right: auto;
+    flex: 1 1 auto;
+    min-width: 200px;
+    max-width: 300px;
+    margin-left: auto;
+    text-align: right;
+  }
+  @media (max-width: 767px) {
+    div.dataTables_wrapper div.dataTables_filter {
+      flex: 1 1 100%;
+      min-width: unset;
+      max-width: unset;
+      margin-left: 0;
+      text-align: left;
+      order: -1;
+      padding: 10px 0;
+    }
+  }
+</style>
+
+<div class="container-fluid default-dashboard">
+  <div class="row">
+
+    <!-- Header -->
+    <div class="col-12 project-list">
+    <div class="card">
+        <div class="row align-items-center">
+            <div class="col-6 p-0">
+                <ul class="nav nav-tabs border-tab d-flex" role="tablist">
+                    <li class="nav-item">
+                        <a class="nav-link active" href="#" role="tab" aria-selected="true">
+                            <i class="fa fa-users me-2"></i>Staff
+                        </a>
+                    </li>
+                </ul>
+            </div>
+            <div class="col-6 p-0 d-flex justify-content-end align-items-center gap-2">
+                <a class="btn btn-primary" href="{% url 'staff_create' %}">
+                    <i class="fa fa-user-plus me-2"></i>New Staff
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+
+   <div class="col-md-12">
+    <form class="card p-3 mb-3 d-print-none" method="get">
+      <div class="row g-3 align-items-end">
+
+        <div class="col-12 col-md-4">
+          <label class="form-label mb-1 small text-muted">
+            <i class="fa fa-search me-1"></i>Search
+          </label>
+          <input type="text" name="q" class="form-control" placeholder="Name / username / email"
+            value="{{ selected.q }}">
+        </div>
+
+        <div class="col-12 col-md-4">
+          <label class="form-label mb-1 small text-muted">
+            <i class="fa fa-user me-1"></i>Role
+          </label>
+          <select class="form-select" name="role">
+            <option value="">All</option>
+            {% for v, label in roles %}
+            <option value="{{ v }}" {% if selected.role == v %}selected{% endif %}>{{ label }}</option>
+            {% endfor %}
+          </select>
+        </div>
+
+        <div class="col-12 col-md-4 d-flex gap-2 justify-content-md-end">
+          <button class="btn btn-outline-secondary flex-fill" type="submit">
+            <i class="fa fa-filter me-2"></i>Filter
+          </button>
+          <a class="btn btn-light flex-fill" href="{% url 'staff_list' %}">
+            <i class="fa fa-refresh me-2"></i>Clear
+          </a>
+        </div>
+      </div>
+    </form>
+   </div>
+
+    <!-- Table -->
+    <div class="col-sm-12">
+      <div class="card">
+        <div class="card-body">
+          <div class="table-responsive custom-scrollbar">
+            <table class="display table table-hover align-middle" id="basic-1">
+              <thead>
+                <tr>
+                  <th><i class="fa fa-id-card-o me-1"></i>Emp ID</th>
+                  <th><i class="fa fa-user me-1"></i>Name</th>
+                  <th><i class="fa fa-user-circle-o me-1"></i>Username</th>
+                  <th><i class="fa fa-user-tag me-1"></i>Role</th>
+                  <th><i class="fa fa-envelope-o me-1"></i>Email</th>
+                  <th><i class="fa fa-info-circle me-1"></i>Status</th>
+                  <th class="text-end"><i class="fa fa-cogs me-1"></i>Action</th>
+                </tr>
+              </thead>
+              <tbody>
+                {% for u in staff %}
+                <tr>
+                  <td class="text-nowrap">
+                    {% if u.profile and u.profile.employee_id %}{{ u.profile.employee_id }}{% else %}&mdash;{% endif %}
+                  </td>
+                  <td class="text-nowrap">{{ u.get_full_name|default:u.username }}</td>
+                  <td class="text-nowrap">{{ u.username }}</td>
+                  <td class="text-nowrap">
+                    {% if u.user_type == 'operation_manager' %}Operations Manager
+                    {% elif u.user_type == 'pharmacy_manager' %}Clinic Manager
+                    {% elif u.user_type == 'receptionist' %}Receptionist
+                    {% elif u.user_type == 'staff' %}Staff
+                    {% elif u.user_type == 'cro' %}CRO
+                    {% elif u.user_type == 'doctor' %}Doctor
+                    {% elif u.user_type == 'consulting_doctor' %}Consulting Doctor
+                    {% else %}{{ u.user_type|default:"—" }}{% endif %}
+                  </td>
+                  <td class="text-nowrap">{{ u.email|default:"—" }}</td>
+                  <td>
+                    {% if u.is_active %}
+                      <span class="badge text-bg-success">Active</span>
+                    {% else %}
+                      <span class="badge text-bg-secondary">Inactive</span>
+                    {% endif %}
+                  </td>
+                  <td class="text-end">
+                    <a class="btn btn-sm btn-outline-secondary" href="{% url 'staff_edit' u.pk %}">
+                      <i class="fa fa-pen me-1"></i>Edit
+                    </a>
+                  </td>
+                </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+{% endblock %}

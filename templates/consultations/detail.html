@@ -1,0 +1,444 @@
+{% extends 'base.html' %}
+{% load roles %}
+{% block content %}
+
+<div class="container-fluid default-dashboard">
+  <div class="row">
+
+    <!-- Header -->
+    <div class="col-12 project-list">
+      <div class="card">
+        <div class="card-body p-0">
+          <!-- Tab and Buttons Container -->
+          <div class="row g-0 align-items-center">
+            <!-- Tab Section -->
+            <div class="col-12 col-lg-5">
+              <ul class="nav nav-tabs border-tab d-flex mb-0" id="top-tab" role="tablist">
+                <li class="nav-item flex-fill">
+                  <a
+                    class="nav-link active d-flex align-items-center justify-content-center justify-content-md-start text-center"
+                    id="top-all-collections-tab"
+                    href=""
+                    role="tab"
+                    aria-controls="top-home"
+                    aria-selected="true"
+                  >
+                    <div>
+                      <i data-feather="target" class="me-2"></i>
+                      <span class="d-none d-sm-inline">Consultation • </span>
+                      <strong>{{ c.patient.name }}</strong>
+                      <br>
+                      <small class="text-muted">({{ c.consultation_date|date:"M d, Y H:i" }})</small>
+                    </div>
+                  </a>
+                </li>
+              </ul>
+            </div>
+            
+            <!-- Buttons Section -->
+            <div class="col-12 col-lg-7">
+              <div class="p-3 border-start-0 border-lg-start">
+                <!-- Mobile: Stack buttons vertically -->
+                <div class="d-flex d-lg-none flex-column gap-2">
+                  {% if request.user|in_group:"Doctor" or request.user|in_group:"OperationsManager" %}
+                  <a class="btn w-100 btn-outline-primary btn-sm" href="{% url 'consultation_edit' pk=c.pk %}">
+                    <i class="fa fa-pencil me-1"></i>Edit Consultation
+                  </a>
+                  {% endif %}
+                  
+                  {% if plan %}
+                  <a class="btn w-100 btn-outline-secondary btn-sm" href="{% url 'treatment_plan_update' pk=c.pk %}">
+                    <i class="fa fa-clipboard me-1"></i>Edit Treatment Plan
+                  </a>
+                  {% elif request.user|in_group:"Doctor" or request.user|in_group:"OperationsManager" %}
+                  <a class="btn w-100 btn-primary btn-sm" href="{% url 'treatment_plan_create' pk=c.pk %}">
+                    <i class="fa fa-plus me-1"></i>Create Treatment Plan
+                  </a>
+                  {% endif %}
+                  
+                  {% if request.user|in_group:"Doctor" or request.user|in_group:"OperationsManager" or request.user|in_group:"PharmacyManager" or request.user|in_group:"Receptionist" %}
+                  <a class="btn w-100 btn-outline-info btn-sm" href="{% url 'consultation_photo_create' pk=c.pk %}">
+                    <i class="fa fa-camera me-1"></i>Add Photo
+                  </a>
+                  {% endif %}
+
+                  <a class="btn w-100 btn-outline-secondary btn-sm" href="{% url 'patient_detail' pk=c.patient.pk %}">
+                    <i class="fa fa-arrow-left me-1"></i>Back to Patient
+                  </a>
+                </div>
+                
+                <!-- Desktop: Horizontal layout with wrapping -->
+                <div class="d-none d-lg-flex flex-wrap gap-2 justify-content-end">
+                  {% if request.user|in_group:"Doctor" or request.user|in_group:"OperationsManager" %}
+                  <a class="btn btn-outline-primary btn-sm" href="{% url 'consultation_edit' pk=c.pk %}">
+                    <i class="fa fa-pencil me-1"></i>Edit
+                  </a>
+                  {% endif %}
+                  
+                  {% if plan %}
+                  <a class="btn btn-outline-secondary btn-sm" href="{% url 'treatment_plan_update' pk=c.pk %}">
+                    <i class="fa fa-clipboard me-1"></i>Edit Plan
+                  </a>
+                  {% elif request.user|in_group:"Doctor" or request.user|in_group:"OperationsManager" %}
+                  <a class="btn btn-primary btn-sm" href="{% url 'treatment_plan_create' pk=c.pk %}">
+                    <i class="fa fa-plus me-1"></i>Create Plan
+                  </a>
+                  {% endif %}
+                  
+                  {% if request.user|in_group:"Doctor" or request.user|in_group:"OperationsManager" or request.user|in_group:"PharmacyManager" or request.user|in_group:"Receptionist" %}
+                  <a class="btn btn-outline-info btn-sm" href="{% url 'consultation_photo_create' pk=c.pk %}">
+                    <i class="fa fa-camera me-1"></i>Add Photo
+                  </a>
+                  {% endif %}
+
+                  <a class="btn btn-outline-secondary btn-sm" href="{% url 'patient_detail' pk=c.patient.pk %}">
+                    <i class="fa fa-arrow-left me-1"></i>Back
+                  </a>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Body -->
+    <div class="col-12">
+      <div class="card">
+        <div class="card-body">
+          <div class="row g-3">
+            <!-- Doctor & Chief Complaint -->
+            <div class="col-12 col-lg-6">
+              <div class="card p-3 h-100">
+                <h6 class="text-muted mb-3">
+                  <i class="fa fa-user-md me-2"></i>Doctor & Chief Complaint
+                </h6>
+                <div class="mb-3">
+                  <small class="text-muted d-block">Doctor</small>
+                  <div class="fw-medium">{{ c.doctor.get_full_name|default:c.doctor.username }}</div>
+                </div>
+                <hr>
+                <div class="row g-3">
+                  <div class="col-12 col-sm-6">
+                    <small class="text-muted d-block">Onset</small>
+                    <div class="fw-medium">{{ c.hair_loss_onset|default:"—" }}</div>
+                  </div>
+                  <div class="col-12 col-sm-6">
+                    <small class="text-muted d-block">Duration</small>
+                    <div class="fw-medium">{{ c.hair_loss_duration|default:"—" }}</div>
+                  </div>
+                  <div class="col-12">
+                    <small class="text-muted d-block">Affected Area</small>
+                    <div>{{ c.affected_area|linebreaksbr|default:"—" }}</div>
+                  </div>
+                  <div class="col-12">
+                    <small class="text-muted d-block">Associated Symptoms</small>
+                    <div>{{ c.associated_symptoms|linebreaksbr|default:"—" }}</div>
+                  </div>
+                  <div class="col-12">
+                    <small class="text-muted d-block">Previous Treatments</small>
+                    <div>{{ c.previous_treatments|linebreaksbr|default:"—" }}</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Examination -->
+            <div class="col-12 col-lg-6">
+              <div class="card p-3 h-100">
+                <h6 class="text-muted mb-3">
+                  <i class="fa fa-search me-2"></i>Examination
+                </h6>
+                <div class="row g-3">
+                  <div class="col-12 col-sm-6">
+                    <small class="text-muted d-block">Scalp Condition</small>
+                    <div class="fw-medium">
+                      <span class="badge bg-light text-dark">{{ c.get_scalp_condition_display|default:"—" }}</span>
+                    </div>
+                  </div>
+                  <div class="col-12 col-sm-6">
+                    <small class="text-muted d-block">Hair Density</small>
+                    <div class="fw-medium">{{ c.hair_density|default:"—" }}</div>
+                  </div>
+                  <div class="col-12 col-sm-6">
+                    <small class="text-muted d-block">Miniaturization Grade</small>
+                    <div class="fw-medium">{{ c.miniaturization_grade|default:"—" }}</div>
+                  </div>
+                  <div class="col-12 col-sm-6">
+                    <small class="text-muted d-block">Pull Test</small>
+                    <div class="fw-medium">
+                      <span class="badge bg-light text-dark">{{ c.get_pull_test_display|default:"—" }}</span>
+                    </div>
+                  </div>
+                  <div class="col-12">
+                    <small class="text-muted d-block">Dermoscopy Findings</small>
+                    <div>{{ c.dermoscopy_findings|linebreaksbr|default:"—" }}</div>
+                  </div>
+                  <div class="col-12">
+                    <small class="text-muted d-block">Examination Remarks</small>
+                    <div>{{ c.examination_remarks|linebreaksbr|default:"—" }}</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Educational Images -->
+            {% if c.scalp_zones_image or c.hair_patterns_image %}
+            <div class="col-12">
+              <div class="card p-3">
+                <h6 class="text-muted mb-3">
+                  <i class="fa fa-graduation-cap me-2"></i>Educational Images
+                </h6>
+                <div class="row g-3">
+                  <div class="col-12 col-md-6">
+                    {% if c.scalp_zones_image %}
+                      <div class="position-relative">
+                        <small class="text-muted d-block mb-2">Scalp Zones</small>
+                        <img src="{{ c.scalp_zones_image.url }}" 
+                             class="img-fluid rounded border cursor-pointer" 
+                             alt="Scalp zones"
+                             style="max-height: 300px; width: 100%; object-fit: cover;"
+                             data-bs-toggle="modal" 
+                             data-bs-target="#educationalModal1">
+                      </div>
+                    {% else %}
+                      <div class="alert alert-light small mb-0 text-center py-4">
+                        <i class="fa fa-image fa-2x text-muted mb-2 d-block"></i>
+                        No scalp zones image
+                      </div>
+                    {% endif %}
+                  </div>
+                  <div class="col-12 col-md-6">
+                    {% if c.hair_patterns_image %}
+                      <div class="position-relative">
+                        <small class="text-muted d-block mb-2">Hair Patterns</small>
+                        <img src="{{ c.hair_patterns_image.url }}" 
+                             class="img-fluid rounded border cursor-pointer" 
+                             alt="Hair patterns"
+                             style="max-height: 300px; width: 100%; object-fit: cover;"
+                             data-bs-toggle="modal" 
+                             data-bs-target="#educationalModal2">
+                      </div>
+                    {% else %}
+                      <div class="alert alert-light small mb-0 text-center py-4">
+                        <i class="fa fa-image fa-2x text-muted mb-2 d-block"></i>
+                        No hair patterns image
+                      </div>
+                    {% endif %}
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Educational Image Modals -->
+            {% if c.scalp_zones_image %}
+            <div class="modal fade" id="educationalModal1" tabindex="-1">
+              <div class="modal-dialog modal-lg modal-dialog-centered">
+                <div class="modal-content">
+                  <div class="modal-header">
+                    <h5 class="modal-title">Scalp Zones</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                  </div>
+                  <div class="modal-body text-center">
+                    <img src="{{ c.scalp_zones_image.url }}" class="img-fluid" alt="Scalp zones">
+                  </div>
+                </div>
+              </div>
+            </div>
+            {% endif %}
+
+            {% if c.hair_patterns_image %}
+            <div class="modal fade" id="educationalModal2" tabindex="-1">
+              <div class="modal-dialog modal-lg modal-dialog-centered">
+                <div class="modal-content">
+                  <div class="modal-header">
+                    <h5 class="modal-title">Hair Patterns</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                  </div>
+                  <div class="modal-body text-center">
+                    <img src="{{ c.hair_patterns_image.url }}" class="img-fluid" alt="Hair patterns">
+                  </div>
+                </div>
+              </div>
+            </div>
+            {% endif %}
+            {% endif %}
+
+            <!-- Consultation Photos -->
+            <div class="col-12">
+              <div class="card p-3">
+                <div class="d-flex flex-column flex-sm-row justify-content-between align-items-start align-items-sm-center mb-3 gap-2">
+                  <h6 class="mb-0">
+                    <i class="fa fa-camera me-2"></i>Consultation Photos
+                  </h6>
+                  {% if request.user|in_group:"Doctor" or request.user|in_group:"OperationsManager" or request.user|in_group:"PharmacyManager" or request.user|in_group:"Receptionist" %}
+                    <a class="btn btn-sm btn-outline-info d-print-none" href="{% url 'consultation_photo_create' pk=c.pk %}">
+                      <i class="fa fa-plus me-1"></i>Add Photo
+                    </a>
+                  {% endif %}
+                </div>
+                
+                <div class="row g-3">
+                  {% for p in photos %}
+                  <div class="col-6 col-md-4 col-lg-3">
+                    <div class="card h-100 photo-card">
+                      <div class="position-relative">
+                        <img src="{{ p.image.url }}" 
+                             class="card-img-top cursor-pointer" 
+                             alt="{{ p.get_photo_type_display }}"
+                             style="height: 200px; object-fit: cover;"
+                             data-bs-toggle="modal" 
+                             data-bs-target="#photoModal-{{ p.id }}">
+                        <div class="position-absolute top-0 end-0 m-2">
+                          <span class="badge bg-dark bg-opacity-75">{{ p.get_photo_type_display }}</span>
+                        </div>
+                      </div>
+                      <div class="card-body small">
+                        <div class="fw-medium mb-1">{{ p.get_photo_type_display }}</div>
+                        <div class="text-muted mb-1">{{ p.taken_at|date:"M d, Y H:i" }}</div>
+                        <div class="text-muted">{{ p.notes|default:"No notes"|truncatechars:50 }}</div>
+                      </div>
+                    </div>
+
+                    <!-- Photo Modal -->
+                    <div class="modal fade" id="photoModal-{{ p.id }}" tabindex="-1">
+                      <div class="modal-dialog modal-lg modal-dialog-centered">
+                        <div class="modal-content">
+                          <div class="modal-header">
+                            <h5 class="modal-title">{{ p.get_photo_type_display }} - {{ p.taken_at|date:"M d, Y H:i" }}</h5>
+                            <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                          </div>
+                          <div class="modal-body text-center">
+                            <img src="{{ p.image.url }}" class="img-fluid" alt="{{ p.get_photo_type_display }}">
+                            {% if p.notes %}
+                              <div class="mt-3 text-start">
+                                <strong>Notes:</strong> {{ p.notes }}
+                              </div>
+                            {% endif %}
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                  {% empty %}
+                    <div class="col-12">
+                      <div class="alert font-primary bg-light text-center py-5">
+                        <i class="fa fa-camera fa-3x mb-3 d-block text-muted"></i>
+                        <h5>No Photos Yet</h5>
+                        <p class="mb-0">Start documenting the consultation by adding photos.</p>
+                      </div>
+                    </div>
+                  {% endfor %}
+                </div>
+              </div>
+            </div>
+
+            <!-- Treatment Plan -->
+            <div class="col-12">
+              <div class="card p-3">
+                <div class="d-flex flex-column flex-sm-row justify-content-between align-items-start align-items-sm-center mb-3 gap-2">
+                  <h6 class="mb-0">
+                    <i class="fa fa-clipboard-list me-2"></i>Treatment Plan
+                  </h6>
+                  {% if request.user|in_group:"Doctor" or request.user|in_group:"OperationsManager" or request.user|in_group:"PharmacyManager" or request.user|in_group:"Receptionist" %}
+                    {% if plan %}
+                      <a class="btn btn-sm btn-outline-secondary d-print-none" href="{% url 'treatment_plan_update' pk=c.pk %}">
+                        <i class="fa fa-pencil me-1"></i>Edit Treatment Plan
+                      </a>
+                    {% else %}
+                      <a class="btn btn-sm btn-primary d-print-none" href="{% url 'treatment_plan_create' pk=c.pk %}">
+                        <i class="fa fa-plus me-1"></i>Create Treatment Plan
+                      </a>
+                    {% endif %}
+                  {% endif %}
+                </div>
+                
+                {% if plan %}
+                  <div class="row g-3">
+                    <div class="col-12 col-md-6">
+                      <div class="p-3 border rounded">
+                        <small class="text-muted d-block">Diagnosis</small>
+                        <div class="fw-medium">{{ plan.primary_diagnosis }}</div>
+                      </div>
+                    </div>
+                    <div class="col-12 col-md-6">
+                      <div class="p-3 border rounded">
+                        <small class="text-muted d-block">Procedure</small>
+                        <div class="fw-medium">{{ plan.get_procedure_type_display }}</div>
+                        <small class="text-muted">{{ plan.total_sessions }} sessions • {{ plan.session_frequency }}</small>
+                      </div>
+                    </div>
+                    <div class="col-12 col-md-6">
+                      <div class="p-3 border rounded">
+                        <small class="text-muted d-block">Adjunctive Treatments</small>
+                        <div>{{ plan.adjunctive_treatments|default:"—" }}</div>
+                      </div>
+                    </div>
+                    <div class="col-12 col-md-6">
+                      <div class="p-3 border rounded">
+                        <small class="text-muted d-block">Consent & Outcomes</small>
+                        <div>
+                          <span class="badge {{ plan.consent_obtained|yesno:'bg-success,bg-warning' }} me-2">
+                            Consent: {{ plan.consent_obtained|yesno:"Yes,No" }}
+                          </span>
+                          <span class="badge {{ plan.expected_outcomes_explained|yesno:'bg-success,bg-warning' }}">
+                            Outcomes: {{ plan.expected_outcomes_explained|yesno:"Yes,No" }}
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                    <div class="col-12">
+                      <div class="p-3 border rounded bg-light">
+                        <div class="row align-items-center">
+                          <div class="col-12 col-sm-6">
+                            <small class="text-muted d-block">Cost per Session</small>
+                            <div class="h5 text-success mb-0">₹ {{ plan.cost_per_session }}</div>
+                          </div>
+                          <div class="col-12 col-sm-6 text-sm-end">
+                            <small class="text-muted d-block">Total Cost</small>
+                            <div class="h4 text-success mb-0">₹ {{ plan.total_cost }}</div>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                {% else %}
+                  <div class="alert font-primary bg-light text-center py-5">
+                    <i class="fa fa-clipboard-list fa-3x mb-3 d-block text-muted"></i>
+                    <h5>No Treatment Plan Yet</h5>
+                    <p class="mb-0">Create a treatment plan to complete the consultation.</p>
+                  </div>
+                {% endif %}
+              </div>
+            </div>
+
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<style>
+  .cursor-pointer {
+    cursor: pointer;
+  }
+  
+  .photo-card:hover {
+    transform: translateY(-2px);
+    transition: transform 0.2s ease;
+  }
+  
+  .photo-card img:hover {
+    opacity: 0.9;
+  }
+  
+  @media print {
+    .btn, .d-print-none { display: none !important; }
+    .card { border: none !important; box-shadow: none !important; }
+    .table th, .table td { padding: .35rem .5rem !important; }
+  }
+</style>
+
+{% endblock %}

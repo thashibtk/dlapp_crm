@@ -1,0 +1,449 @@
+{% extends 'base.html' %}
+{% block content %}
+
+<style>
+  /* KPI card styling */
+  .kpi-card .label { font-size: .8rem; color: #6c757d; }
+  .kpi-card .value { font-size: 1.5rem; font-weight: 600; }
+  .kpi-card .icon-wrap{
+    width:36px;height:36px;border-radius:8px;display:flex;align-items:center;justify-content:center;
+    background:rgba(43, 95, 96, .2);
+  }
+
+  /* DataTables search alignment */
+  div.dataTables_wrapper div.dataTables_filter {
+    position: static;
+    top: auto;
+    right: auto;
+    flex: 1 1 auto;
+    min-width: 200px;
+    max-width: 300px;
+    margin-left: auto;
+    text-align: right;
+  }
+  @media (max-width: 767px) {
+    div.dataTables_wrapper div.dataTables_filter {
+      flex: 1 1 100%;
+      min-width: unset;
+      max-width: unset;
+      margin-left: 0;
+      text-align: left;
+      order: -1;
+      padding: 10px 0;
+    }
+  }
+</style>
+
+<style>
+  /* --- A4 Print Styles (same as Appointments/Expenses) --- */
+  .finance-report-print { display: none; }
+
+  @media print {
+    @page { size: A4 portrait; margin: 10mm 8mm 15mm 8mm; }
+
+    body {
+      margin: 0 !important; padding: 0 !important;
+      font-family: Arial, Helvetica, sans-serif !important;
+      font-size: 10pt !important; line-height: 1.2 !important;
+      color: #000 !important; background: #fff !important; width: 100% !important;
+    }
+
+    /* hide everything by default */
+    body * { visibility: hidden !important; }
+
+    /* show only the print container */
+    .finance-report-print, .finance-report-print * { visibility: visible !important; }
+
+    /* place container at page origin */
+    .finance-report-print {
+      display: block !important; position: absolute !important;
+      left: 0 !important; top: 0 !important; width: 100% !important;
+      margin: 0 !important; padding: 0 !important; background: #fff !important;
+    }
+
+    .print-header {
+      display: flex !important; justify-content: space-between; align-items: flex-start;
+      margin-bottom: 30px; border-bottom: 2px solid #333; padding-bottom: 10px;
+    }
+    .print-header-left { text-align: left; }
+    .print-header-right { text-align: right; }
+    .print-header img { width: 80px; height: auto; }
+    .print-header h1 { font-size: 24px; font-weight: bold; color: #2b5f60; margin: 0; }
+    .print-header p { margin: 5px 0; font-size: 12px; color: #555; }
+
+    .print-table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+    .print-table th, .print-table td {
+      border: 1px solid #ddd; padding: 6px; text-align: left; font-size: 11px;
+    }
+    .print-table th { background-color: #2b5f60 !important; color: #fff !important; font-weight: bold; }
+    .print-table tbody tr:nth-child(even) { background-color: #f9f9f9 !important; }
+
+    .print-footer { text-align: center; margin-top: 32px; font-size: 10px; color: #666; }
+
+    .d-print-none { display: none !important; }
+    .card { box-shadow: none !important; border: none !important; }
+
+    /* keep brand colors */
+    * {
+      -webkit-print-color-adjust: exact !important;
+      print-color-adjust: exact !important;
+      color-adjust: exact !important;
+    }
+  }
+</style>
+
+<div class="container-fluid default-dashboard">
+  <div class="row">
+
+    <div class="col-12 project-list d-print-none">
+      <div class="card">
+        <div class="row align-items-center">
+          <div class="col-6 p-0">
+            <ul class="nav nav-tabs border-tab d-flex" role="tablist">
+              <li class="nav-item">
+                <a class="nav-link active" href="#" role="tab" aria-selected="true">
+                  <i class="fa fa-line-chart me-2"></i>Finance Report
+                </a>
+              </li>
+            </ul>
+          </div>
+          <div class="col-6 p-0 d-flex justify-content-end align-items-center gap-2">
+            <!-- changed to printFinance() -->
+            <button type="button" class="btn btn-outline-success" onclick="printFinance()">
+              <i class="fa fa-print me-2"></i>Print
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="col-md-12 d-print-none">
+      <form method="get" class="card p-3 mb-3" id="filterForm">
+        <div class="row g-3 align-items-end">
+
+          <div class="col-12 col-md-4">
+            <label class="form-label mb-1 small text-muted">
+              <i class="fa fa-bolt me-1"></i>Quick range
+            </label>
+            <div class="btn-group w-100" role="group">
+              <button class="btn btn-outline-secondary" type="button" data-range="today">
+                <i class="fa fa-calendar-o me-1"></i>Today
+              </button>
+              <button class="btn btn-outline-secondary" type="button" data-range="7d">
+                <i class="fa fa-calendar me-1"></i>Last 7 days
+              </button>
+              <button class="btn btn-outline-secondary" type="button" data-range="month">
+                <i class="fa fa-calendar-check-o me-1"></i>This month
+              </button>
+            </div>
+          </div>
+
+          <div class="col-12 col-md-2">
+            <label class="form-label mb-1 small text-muted"><i class="fa fa-sign-in me-1"></i>From</label>
+            <input type="date" class="form-control" name="start" value="{{ form.start.value|default:'' }}">
+          </div>
+          <div class="col-12 col-md-2">
+            <label class="form-label mb-1 small text-muted"><i class="fa fa-sign-out me-1"></i>To</label>
+            <input type="date" class="form-control" name="end" value="{{ form.end.value|default:'' }}">
+          </div>
+
+          <div class="col-12 col-md-4 d-flex gap-2 justify-content-md-end">
+            <button class="btn btn-primary flex-fill" type="submit">
+              <i class="fa fa-filter me-2"></i>Apply
+            </button>
+            <a class="btn btn-light flex-fill" href="{% url 'finance_report' %}">
+              <i class="fa fa-refresh me-2"></i>Clear
+            </a>
+          </div>
+        </div>
+      </form>
+    </div>
+
+    {% if summary.period %}
+    <div class="col-md-12">
+      <div class="card p-3 mb-3 d-flex flex-wrap gap-3">
+        <span class="badge txt-primary">
+          <i class="fa fa-calendar me-1"></i><b>Period:</b> {{ summary.period }}
+        </span>
+      </div>
+    </div>
+
+    <div class="col-md-12">
+      <div class="row g-3">
+        <div class="col-12 col-md-6 col-xl-3">
+          <div class="card p-3 kpi-card d-flex flex-row align-items-center gap-3">
+            <div class="icon-wrap"><i class="fa fa-list"></i></div>
+            <div>
+              <div class="label">Total Billed</div>
+              <div class="value">₹ {{ summary.total_billed }}</div>
+            </div>
+          </div>
+        </div>
+        <div class="col-12 col-md-6 col-xl-3">
+          <div class="card p-3 kpi-card d-flex flex-row align-items-center gap-3">
+            <div class="icon-wrap"><i class="icofont icofont-wallet"></i></div>
+            <div>
+              <div class="label">Total Collection</div>
+              <div class="value">₹ {{ summary.total_collection }}</div>
+            </div>
+          </div>
+        </div>
+        <div class="col-12 col-md-6 col-xl-3">
+          <div class="card p-3 kpi-card d-flex flex-row align-items-center gap-3">
+            <div class="icon-wrap"><i class="fa fa-print"></i></div>
+            <div>
+              <div class="label">Expenses (Paid)</div>
+              <div class="value">₹ {{ summary.total_expenses }}</div>
+            </div>
+          </div>
+        </div>
+        <div class="col-12 col-md-6 col-xl-3">
+          <div class="card p-3 kpi-card d-flex flex-row align-items-center gap-3">
+            <div class="icon-wrap"><i class="fa fa-inr"></i></div>
+            <div>
+              <div class="label">Net = Collection − Expenses</div>
+              <div class="value">₹ {{ summary.net }}</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="col-12 col-md-6 col-xl-3">
+          <div class="card p-3 kpi-card d-flex flex-row align-items-center gap-3">
+            <div class="icon-wrap"><i class="fa fa-medkit"></i></div>
+            <div>
+              <div class="label">Medicine Sale Value</div>
+              <div class="value">₹ {{ summary.total_medicine_sale }}</div>
+            </div>
+          </div>
+        </div>
+
+        {% if summary.total_service_sale is not None %}
+        <div class="col-12 col-md-6 col-xl-3">
+          <div class="card p-3 kpi-card d-flex flex-row align-items-center gap-3">
+            <div class="icon-wrap"><i class="fa fa-stethoscope"></i></div>
+            <div>
+              <div class="label">Service Sale Value</div>
+              <div class="value">₹ {{ summary.total_service_sale }}</div>
+            </div>
+          </div>
+        </div>
+        {% endif %}
+
+        <hr class="w-100 my-0">
+
+        <div class="col-md-12">
+          <div class="card p-3 mb-3 d-flex flex-wrap gap-3">
+            <span class="badge txt-primary">
+              <i class="fa fa-user me-1"></i><b>Leads</b>
+              <i class="ms-2 fa fa-calendar me-1"></i><b>Period:</b> {{ summary.period }}
+            </span>
+          </div>
+        </div>
+
+        <div class="col-12 col-md-6 col-xl-3">
+          <div class="card p-3 kpi-card d-flex flex-row align-items-center gap-3">
+            <div class="icon-wrap"><i class="fa fa-user-plus"></i></div>
+            <div>
+              <div class="label">New Leads</div>
+              <div class="value">{{ summary.total_leads }}</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="col-12 col-md-6 col-xl-3">
+          <div class="card p-3 kpi-card d-flex flex-row align-items-center gap-3">
+            <div class="icon-wrap"><i class="fa fa-check-circle"></i></div>
+            <div>
+              <div class="label">Converted Leads</div>
+              <div class="value">{{ summary.leads_converted }}</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="col-12 col-md-6 col-xl-3">
+          <div class="card p-3 kpi-card d-flex flex-row align-items-center gap-3">
+            <div class="icon-wrap"><i class="fa fa-hourglass-half"></i></div>
+            <div>
+              <div class="label">Open Leads</div>
+              <div class="value">{{ summary.leads_open }}</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="col-12 col-md-6 col-xl-3">
+          <div class="card p-3 kpi-card d-flex flex-row align-items-center gap-3">
+            <div class="icon-wrap"><i class="fa fa-bullseye"></i></div>
+            <div>
+              <div class="label">Lead Conversion</div>
+              <div class="value">{{ summary.lead_conversion_rate|floatformat:1 }}%</div>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+    {% endif %}
+
+  </div>
+</div>
+
+{# ---------- PRINT-ONLY CONTAINER ---------- #}
+{% load static %}
+<div class="finance-report-print">
+  <div class="print-header">
+    <div class="print-header-left">
+      <img src="{% static 'assets/images/logo/dlapp_logo_grncut.png' %}" alt="DLapp">
+    </div>
+    <div class="print-header-right">
+      <h1>D Lapp Hair Regenerative Clinic</h1>
+      <p>
+        Kottayil Arcade, Malaparamba,<br>
+        Kozhikode, Kerala 673009<br>
+        Phone: +91 8593957885 | Email: info@dlapphairclinic.com
+      </p>
+    </div>
+  </div>
+
+  <div style="text-align:center; margin-bottom: 10px;">
+    <h2 style="font-size:18px; margin:0 0 6px;">Finance Report</h2>
+    <p>
+      Period: <span id="printPeriod">{{ summary.period|default:"—" }}</span> |
+      Date Range: <span id="printDateRange"></span>
+    </p>
+  </div>
+
+  <table class="print-table">
+    <thead>
+      <tr>
+        <th style="width:35%;">Metric</th>
+        <th style="width:65%;">Value</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr><td>Total Billed</td><td>₹ {{ summary.total_billed }}</td></tr>
+      <tr><td>Total Collection</td><td>₹ {{ summary.total_collection }}</td></tr>
+      <tr><td>Expenses (Paid)</td><td>₹ {{ summary.total_expenses }}</td></tr>
+      <tr><td>Net = Collection − Expenses</td><td>₹ {{ summary.net }}</td></tr>
+      <tr><td>Medicine Sale Value</td><td>₹ {{ summary.total_medicine_sale }}</td></tr>
+      {% if summary.total_service_sale is not None %}
+      <tr><td>Service Sale Value</td><td>₹ {{ summary.total_service_sale }}</td></tr>
+      {% endif %}
+      <tr><td>New Leads</td><td>{{ summary.total_leads }}</td></tr>
+      <tr><td>Converted Leads</td><td>{{ summary.leads_converted }}</td></tr>
+      <tr><td>Open Leads</td><td>{{ summary.leads_open }}</td></tr>
+      <tr><td>Lead Conversion</td><td>{{ summary.lead_conversion_rate|floatformat:1 }}%</td></tr>
+    </tbody>
+  </table>
+
+  <div class="print-footer">
+    Generated by {{ request.user.get_full_name|default:request.user.username }} on {% now "F d, Y, h:i A" %}.
+  </div>
+</div>
+
+<script class="d-print-none">
+  function printFinance() {
+    const form = document.getElementById('filterForm');
+    const startI = form ? form.querySelector('input[name="start"]') : null;
+    const endI   = form ? form.querySelector('input[name="end"]')   : null;
+
+    // Build date range text
+    const start = startI && startI.value ? startI.value : '';
+    const end   = endI   && endI.value   ? endI.value   : '';
+    let dr = 'All Dates';
+    if (start && end) dr = `From ${start} to ${end}`;
+    else if (start)   dr = `From ${start}`;
+    else if (end)     dr = `To ${end}`;
+    const drSpan = document.getElementById('printDateRange');
+    if (drSpan) drSpan.textContent = dr;
+
+    window.print();
+  }
+
+  document.addEventListener('DOMContentLoaded', function(){
+    const form = document.getElementById('filterForm');
+    if (!form) return;
+
+    const startInput = form.querySelector('input[name="start"]');
+    const endInput   = form.querySelector('input[name="end"]');
+    const qBtns      = form.querySelectorAll('[data-range]');
+
+    // Helpers (local dates)
+    const pad = n => String(n).padStart(2, '0');
+    const fmt = d => `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`;
+    const parseISO = s => {
+      if (!s) return null;
+      const [y,m,d] = s.split('-').map(Number);
+      return new Date(y, m-1, d);
+    };
+    const today = (() => { const n=new Date(); return new Date(n.getFullYear(), n.getMonth(), n.getDate()); })();
+    const start7d    = new Date(today.getFullYear(), today.getMonth(), today.getDate() - 6);
+    const monthStart = new Date(today.getFullYear(), today.getMonth(), 1);
+    const monthEnd   = new Date(today.getFullYear(), today.getMonth()+1, 0);
+
+    // UI helpers
+    const clearActive = () => qBtns.forEach(b => { b.classList.remove('active'); b.setAttribute('aria-pressed','false'); });
+    const setActive   = (btn) => { clearActive(); if (btn) { btn.classList.add('active'); btn.setAttribute('aria-pressed','true'); } };
+    const syncMinMax  = () => {
+      if (!startInput || !endInput) return;
+      endInput.min   = startInput.value || '';
+      startInput.max = endInput.value   || '';
+    };
+
+    // Infer active button based on start/end values
+    (function inferActiveFromInputs(){
+      const s = parseISO(startInput?.value);
+      const e = parseISO(endInput?.value);
+      if (!s || !e) { clearActive(); return; }
+      const sISO = fmt(s), eISO = fmt(e);
+      if (sISO === fmt(today) && eISO === fmt(today)) {
+        setActive(form.querySelector('[data-range="today"]')); return;
+      }
+      if (sISO === fmt(start7d) && eISO === fmt(today)) {
+        setActive(form.querySelector('[data-range="7d"]')); return;
+      }
+      if (sISO === fmt(monthStart) && eISO === fmt(monthEnd)) {
+        setActive(form.querySelector('[data-range="month"]')); return;
+      }
+      clearActive();
+    })();
+
+    syncMinMax();
+
+    // Compute ranges
+    function setRange(kind) {
+      let s = new Date(today), e = new Date(today);
+      if (kind === '7d') { s = start7d; e = today; }
+      else if (kind === 'month') { s = monthStart; e = monthEnd; }
+      // 'today' stays today
+      if (startInput) startInput.value = fmt(s);
+      if (endInput)   endInput.value   = fmt(e);
+      syncMinMax();
+    }
+
+    // Quick range buttons: set dates, mark active, submit
+    qBtns.forEach(btn=>{
+      btn.addEventListener('click', function(){
+        setRange(this.getAttribute('data-range'));
+        setActive(btn);
+        form.submit();
+      });
+    });
+
+    // Manual date edits: keep constraints, clear quick-range active (NO auto-submit)
+    const onDateChange = () => {
+      if (startInput?.value && endInput?.value && endInput.value < startInput.value) {
+        endInput.value = startInput.value;
+      }
+      syncMinMax();
+      clearActive();
+    };
+    startInput?.addEventListener('input', onDateChange);
+    endInput?.addEventListener('input', onDateChange);
+
+    // Ensure clean GET on submit (drop any stale query)
+    form.setAttribute('action', window.location.pathname);
+  });
+</script>
+
+
+{% endblock %}

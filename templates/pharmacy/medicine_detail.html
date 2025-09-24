@@ -1,0 +1,185 @@
+{% extends 'base.html' %}
+{% block content %}
+
+<div class="container-fluid default-dashboard">
+  <div class="row">
+
+    <!-- Header -->
+    <div class="col-md-12 project-list d-print-none">
+      <div class="card">
+        <div class="row align-items-center">
+          <div class="col-md-6 p-0">
+            <ul class="nav nav-tabs border-tab d-flex" role="tablist">
+              <li class="nav-item">
+                <a class="nav-link active" href="#" role="tab" aria-selected="true">
+                  <i class="fa fa-medkit me-2"></i>Pharmacy • Medicine
+                </a>
+              </li>
+              <li class="nav-item">
+                <span class="text-muted small">
+                  <i class="fa fa-tag me-1"></i>{{ medicine.name }}
+                </span>
+              </li>
+            </ul>
+          </div>
+          <div class="col-md-6 p-0 d-flex justify-content-end align-items-center gap-2">
+            <a class="btn btn-outline-secondary" href="{% url 'pharmacy_medicine_list' %}">
+              <i class="fa fa-arrow-left me-2"></i>Back to List
+            </a>
+            <a class="btn btn-primary" href="{% url 'pharmacy_medicine_edit' medicine.pk %}">
+              <i class="fa fa-pen me-2"></i>Edit
+            </a>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Body -->
+    <div class="col-md-12">
+      <div class="row g-3">
+
+        <!-- Left: Details -->
+        <div class="col-lg-7">
+          <div class="card shadow-sm">
+            <div class="card-body">
+              <div class="d-flex align-items-center justify-content-between mb-2">
+                <h5 class="mb-0">{{ medicine.name }}</h5>
+                {% if medicine.is_active %}
+                  <span class="badge text-bg-success">Active</span>
+                {% else %}
+                  <span class="badge text-bg-secondary">Inactive</span>
+                {% endif %}
+              </div>
+
+              <div class="row g-3">
+                <div class="col-md-6">
+                  <div class="small text-muted">Generic Name</div>
+                  <div class="fw-semibold">{{ medicine.generic_name|default:"—" }}</div>
+                </div>
+                <div class="col-md-6">
+                  <div class="small text-muted">Category</div>
+                  <div class="fw-semibold">
+                    {% if medicine.category %}{{ medicine.category.name }}{% else %}—{% endif %}
+                  </div>
+                </div>
+
+                <div class="col-md-4">
+                  <div class="small text-muted">Type</div>
+                  <div class="fw-semibold">{{ medicine.get_medicine_type_display|default:"—" }}</div>
+                </div>
+                <div class="col-md-4">
+                  <div class="small text-muted">Strength</div>
+                  <div class="fw-semibold">{{ medicine.strength|default:"—" }}</div>
+                </div>
+                <div class="col-md-4">
+                  <div class="small text-muted">UOM</div>
+                  <div class="fw-semibold">{{ medicine.unit_of_measurement|default:"—" }}</div>
+                </div>
+
+                <div class="col-md-6">
+                  <div class="small text-muted">Manufacturer</div>
+                  <div class="fw-semibold">{{ medicine.manufacturer|default:"—" }}</div>
+                </div>
+
+                <div class="col-md-3">
+                  <div class="small text-muted">Purchase Price (₹)</div>
+                  <div class="fw-semibold">{{ medicine.purchase_price|default:"0.00" }}</div>
+                </div>
+                <div class="col-md-3">
+                  <div class="small text-muted">Selling Price (₹)</div>
+                  <div class="fw-semibold">{{ medicine.selling_price|default:"0.00" }}</div>
+                </div>
+
+                <div class="col-12">
+                  <div class="small text-muted">Description</div>
+                  <div>{{ medicine.description|default:"—" }}</div>
+                </div>
+                <div class="col-12">
+                  <div class="small text-muted">Side Effects</div>
+                  <div>{{ medicine.side_effects|default:"—" }}</div>
+                </div>
+                <div class="col-12">
+                  <div class="small text-muted">Contraindications</div>
+                  <div>{{ medicine.contraindications|default:"—" }}</div>
+                </div>
+                <div class="col-12">
+                  <div class="small text-muted">Storage Instructions</div>
+                  <div>{{ medicine.storage_instructions|default:"—" }}</div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Right: Stock -->
+        <div class="col-lg-5">
+          <div class="card shadow-sm">
+            <div class="card-body">
+              <div class="d-flex justify-content-between align-items-center mb-2">
+                <h6 class="mb-0"><i class="fa fa-box me-2"></i>Stock</h6>
+                {% if low_stock %}
+                  <span class="badge text-bg-danger">Below minimum</span>
+                {% endif %}
+              </div>
+
+              <div class="row g-3">
+                <div class="col-md-4">
+                  <div class="small text-muted">Current Qty</div>
+                  <div class="h5 mb-0">{{ stock.current_quantity }}</div>
+                </div>
+                <div class="col-md-4">
+                  <div class="small text-muted">Reserved</div>
+                  <div class="h5 mb-0">{{ stock.reserved_quantity }}</div>
+                </div>
+                <div class="col-md-4">
+                  <div class="small text-muted">Min. Level</div>
+                  <div class="h5 mb-0">{{ medicine.minimum_stock_level|default:"—" }}</div>
+                </div>
+              </div>
+
+              <hr>
+              <div class="small text-muted mb-2">
+                <i class="fa fa-history me-1"></i>Recent Transactions
+              </div>
+
+              <div class="table-responsive">
+                <table class="table table-sm mb-0">
+                  <thead class="table-light">
+                    <tr>
+                      <th>Date</th>
+                      <th>Type</th>
+                      <th class="text-end">Qty</th>
+                      <th class="text-end">Unit ₹</th>
+                      <th>Ref</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {% for tx in recent_txs %}
+                    <tr>
+                      <td class="text-nowrap">{{ tx.created_at|date:"Y-m-d H:i" }}</td>
+                      <td>{{ tx.get_transaction_type_display }}</td>
+                      <td class="text-end">{{ tx.quantity }}</td>
+                      <td class="text-end">{{ tx.unit_price }}</td>
+                      <td>{{ tx.reference_number|default:"—" }}</td>
+                    </tr>
+                    {% empty %}
+                    <tr><td colspan="5" class="text-center text-muted py-3">No recent transactions.</td></tr>
+                    {% endfor %}
+                  </tbody>
+                </table>
+              </div>
+
+            </div>
+          </div>
+        </div>
+
+      </div> <!-- /row -->
+    </div>
+
+  </div>
+</div>
+
+<style>
+  @media print { .d-print-none { display:none !important; } }
+</style>
+{% endblock %}
