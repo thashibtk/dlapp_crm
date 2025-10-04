@@ -5,14 +5,14 @@
     <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <link rel="icon" href="{% static 'assets/images/logo/mrlogo_white.png' %}" type="image/x-icon">
-    <link rel="shortcut icon" href="{% static 'assets/images/logo/mrlogo_white.png' %}" type="image/x-icon">
+    <link rel="icon" href="{% static 'assets/images/logo/dlapp_logo_grncut.png' %}" type="image/x-icon">
+    <link rel="shortcut icon" href="{% static 'assets/images/logo/dlapp_logo_grncut.png' %}" type="image/x-icon">
     <title>Dlapp CRM - Login</title>
     <!-- Google font -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="">
-    <link href="https://fonts.googleapis.com/css2?family=Nunito+Sans:wght@200;300;400;600;700;800;900&amp;display=swap" rel="stylesheet">
-    <link href="https://fonts.googleapis.com/css?family=Roboto:300,300i,400,400i,500,500i,700,700i,900&amp;display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Nunito+Sans:wght@200;300;400;600;700;800;900&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css?family=Roboto:300,300i,400,400i,500,500i,700,700i,900&display=swap" rel="stylesheet">
     <link rel="stylesheet" type="text/css" href="{% static 'assets/css/font-awesome.css' %}">
     <!-- ico-font-->
     <link rel="stylesheet" type="text/css" href="{% static 'assets/css/vendors/icofont.css' %}">
@@ -22,8 +22,6 @@
     <link rel="stylesheet" type="text/css" href="{% static 'assets/css/vendors/flag-icon.css' %}">
     <!-- Feather icon-->
     <link rel="stylesheet" type="text/css" href="{% static 'assets/css/vendors/feather-icon.css' %}">
-    <!-- Plugins css start-->
-    <!-- Plugins css Ends-->
     <!-- Bootstrap css-->
     <link rel="stylesheet" type="text/css" href="{% static 'assets/css/vendors/bootstrap.css' %}">
     <!-- App css-->
@@ -46,26 +44,31 @@
         <div class="col-12 p-0">
           <div class="login-card login-dark">
             <div>
-              <div><a class="logo" href="">
-                <img class="img-fluid logoimg" src="{% static 'assets/images/logo/dlapp_logo_grn.png' %}" alt="loginpage"></a></div>
+              <div>
+                <a class="logo" href="">
+                  <img class="img-fluid logoimg" src="{% static 'assets/images/logo/dlapp_logo_grn.png' %}" alt="loginpage">
+                </a>
+              </div>
               <div class="login-main">
-                <form class="theme-form" method="post" >
+                <form class="theme-form" method="post">
                   {% csrf_token %}
                   <h3>Sign in to account</h3>
-                  <p>Enter your email & password to login</p>
+                  <p>Enter your username & password to login</p>
+                  
                   <div class="form-group">
                     <label class="col-form-label">Username</label>
-                    <input class="form-control" type="text" name="username" required="" placeholder="Enter your username">
+                    <input class="form-control" type="text" name="username" required placeholder="Enter your username">
                   </div>
+                  
                   <div class="form-group">
                     <label class="col-form-label">Password</label>
                     <div class="form-input position-relative"> 
-                      <input class="form-control" type="password" name="password" required="" placeholder="*********">
+                      <input class="form-control" type="password" name="password" required placeholder="*********">
                       <div class="show-hide"><span class="show"></span></div>
                     </div>
                   </div>
+                  
                   <div class="form-group mb-0">
-                    <div class="checkbox p-0">
                     <div class="text-end mt-3">
                       <button class="btn btn-primary btn-block w-100" type="submit">Sign in</button>
                     </div>
@@ -83,14 +86,10 @@
       <!-- feather icon js-->
       <script src="{% static 'assets/js/icons/feather-icon/feather.min.js' %}"></script>
       <script src="{% static 'assets/js/icons/feather-icon/feather-icon.js' %}"></script>
-      <!-- scrollbar js-->
-      <!-- Sidebar jquery-->
+      <!-- config js-->
       <script src="{% static 'assets/js/config.js' %}"></script>
-      <!-- Plugins JS start-->
-      <!-- Plugins JS Ends-->
       <!-- Theme js-->
       <script src="{% static 'assets/js/script.js' %}"></script>
-      <!-- Plugin used-->
     </div>
   </body>
 </html>

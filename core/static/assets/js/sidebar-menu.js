@@ -18,199 +18,60 @@
     jQuery(".sidebar-title").append(
       '<div class="according-menu"><i class="fa fa-angle-right"></i></div>'
     );
-    jQuery(".sidebar-title").click(function () {
-      jQuery(".sidebar-title")
-        .removeClass("active")
-        .find("div")
-        .replaceWith(
-          '<div class="according-menu"><i class="fa fa-angle-right"></i></div>'
-        );
-      jQuery(".sidebar-submenu, .menu-content").slideUp("normal");
-      jQuery(".menu-content").slideUp("normal");
-      if (jQuery(this).next().is(":hidden") == true) {
-        jQuery(this).addClass("active");
-        jQuery(this)
-          .find("div")
-          .replaceWith(
-            '<div class="according-menu"><i class="fa fa-angle-down"></i></div>'
-          );
-        jQuery(this).next().slideDown("normal");
+
+    // Accordion sidebar (only one open at a time on click)
+    jQuery(".sidebar-title").click(function (e) {
+       var $this = $(this);
+
+      // ✅ if this has a submenu, prevent default (accordion behavior)
+      if ($this.next(".sidebar-submenu").length) {
+        e.preventDefault();
       } else {
-        jQuery(this)
-          .find("div")
-          .replaceWith(
-            '<div class="according-menu"><i class="fa fa-angle-right"></i></div>'
-          );
+        // ✅ no submenu, let it navigate normally
+        return true;
       }
-    });
-    jQuery(".sidebar-submenu, .menu-content").hide();
-    jQuery(".submenu-title").append(
-      '<div class="according-menu"><i class="fa fa-angle-right"></i></div>'
-    );
-    jQuery(".submenu-title").click(function () {
-      jQuery(".submenu-title")
-        .removeClass("active")
-        .find("div")
-        .replaceWith(
-          '<div class="according-menu"><i class="fa fa-angle-right"></i></div>'
+
+      var group = $this.data("group");
+
+      if ($this.next().is(":hidden") === true) {
+        // close all
+        $(".sidebar-title").removeClass("active").find("div.according-menu")
+          .replaceWith('<div class="according-menu"><i class="fa fa-angle-right"></i></div>');
+        $(".sidebar-submenu, .menu-content").slideUp("normal");
+
+        // open clicked one
+        $this.addClass("active");
+        $this.find("div.according-menu").replaceWith(
+          '<div class="according-menu"><i class="fa fa-angle-down"></i></div>'
         );
-      jQuery(".submenu-content").slideUp("normal");
-      if (jQuery(this).next().is(":hidden") == true) {
-        jQuery(this).addClass("active");
-        jQuery(this)
-          .find("div")
-          .replaceWith(
-            '<div class="according-menu"><i class="fa fa-angle-down"></i></div>'
-          );
-        jQuery(this).next().slideDown("normal");
+        $this.next().slideDown("normal");
+
+        if (group) {
+          localStorage.setItem("sidebar-open-group", group);
+        }
       } else {
-        jQuery(this)
-          .find("div")
-          .replaceWith(
-            '<div class="according-menu"><i class="fa fa-angle-right"></i></div>'
-          );
-      }
-    });
-    jQuery(".submenu-content").hide();
-  } else if ($("#pageWrapper").hasClass("horizontal-wrapper")) {
-    var smallSize = false,
-      bigSize = false;
-    const horizontalMenu = () => {
-      var contentwidth = jQuery(window).width();
-      if (contentwidth <= 992 && !smallSize) {
-        (smallSize = true), (bigSize = false);
-        $("#pageWrapper")
-          .removeClass("horizontal-wrapper")
-          .addClass("compact-wrapper");
-        $(".page-body-wrapper")
-          .removeClass("horizontal-menu")
-          .addClass("sidebar-icon");
-        jQuery(".submenu-title").append(
+        // collapse clicked one
+        $this.removeClass("active");
+        $this.find("div.according-menu").replaceWith(
           '<div class="according-menu"><i class="fa fa-angle-right"></i></div>'
         );
-        jQuery(".submenu-title").click(function () {
-          jQuery(".submenu-title").removeClass("active");
-          jQuery(".submenu-title")
-            .find("div")
-            .replaceWith(
-              '<div class="according-menu"><i class="fa fa-angle-right"></i></div>'
-            );
-          jQuery(".submenu-content").slideUp("normal");
-          if (jQuery(this).next().is(":hidden") == true) {
-            jQuery(this).addClass("active");
-            jQuery(this)
-              .find("div")
-              .replaceWith(
-                '<div class="according-menu"><i class="fa fa-angle-down"></i></div>'
-              );
-            jQuery(this).next().slideDown("normal");
-          } else {
-            jQuery(this)
-              .find("div")
-              .replaceWith(
-                '<div class="according-menu"><i class="fa fa-angle-right"></i></div>'
-              );
-          }
-        });
-        jQuery(".submenu-content").hide();
-
-        jQuery(".sidebar-title").append(
-          '<div class="according-menu"><i class="fa fa-angle-right"></i></div>'
-        );
-        jQuery(".sidebar-title").click(function () {
-          jQuery(".sidebar-title").removeClass("active");
-          jQuery(".sidebar-title")
-            .find("div")
-            .replaceWith(
-              '<div class="according-menu"><i class="fa fa-angle-right"></i></div>'
-            );
-          jQuery(".sidebar-submenu, .menu-content").slideUp("normal");
-          if (jQuery(this).next().is(":hidden") == true) {
-            jQuery(this).addClass("active");
-            jQuery(this)
-              .find("div")
-              .replaceWith(
-                '<div class="according-menu"><i class="fa fa-angle-down"></i></div>'
-              );
-            jQuery(this).next().slideDown("normal");
-          } else {
-            jQuery(this)
-              .find("div")
-              .replaceWith(
-                '<div class="according-menu"><i class="fa fa-angle-right"></i></div>'
-              );
-          }
-        });
-        jQuery(".sidebar-submenu, .menu-content").hide();
-      }
-      if (contentwidth > 992 && !bigSize) {
-        (smallSize = false), (bigSize = true);
-        $("#pageWrapper")
-          .removeClass("compact-wrapper")
-          .addClass("horizontal-wrapper");
-        jQuery(".sidebar-title .according-menu").remove();
-      }
-    };
-    horizontalMenu();
-    addEventListener("resize", (event) => {
-      horizontalMenu();
-    });
-  } else if ($("#pageWrapper").hasClass("compact-sidebar")) {
-    var contentwidth = jQuery(window).width();
-    if (contentwidth > 992) {
-      $('<div class="bg-overlay1"></div>').appendTo($("body"));
-    }
-
-    jQuery(".sidebar-title").click(function () {
-      jQuery(".sidebar-title").removeClass("active");
-      $(".bg-overlay1").removeClass("active");
-      jQuery(".sidebar-submenu").removeClass("close-submenu").slideUp("normal");
-      jQuery(".sidebar-submenu, .menu-content").slideUp("normal");
-      jQuery(".menu-content").slideUp("normal");
-
-      if (jQuery(this).next().is(":hidden") == true) {
-        jQuery(this).addClass("active");
-        jQuery(this).next().slideDown("normal");
-        $(".bg-overlay1").addClass("active");
-
-        $(".bg-overlay1").on("click", function () {
-          jQuery(".sidebar-submenu, .menu-content").slideUp("normal");
-          $(this).removeClass("active");
-        });
-      }
-      if (contentwidth < "992") {
-        $(".bg-overlay").addClass("active");
+        $this.next().slideUp("normal");
+        localStorage.removeItem("sidebar-open-group");
       }
     });
-    jQuery(".sidebar-submenu, .menu-content").hide();
-    jQuery(".submenu-title").append(
-      '<div class="according-menu"><i class="fa fa-angle-right"></i></div>'
-    );
-    jQuery(".submenu-title").click(function () {
-      jQuery(".submenu-title")
-        .removeClass("active")
-        .find("div")
-        .replaceWith(
-          '<div class="according-menu"><i class="fa fa-angle-right"></i></div>'
-        );
-      jQuery(".submenu-content").slideUp("normal");
-      if (jQuery(this).next().is(":hidden") == true) {
-        jQuery(this).addClass("active");
-        jQuery(this)
-          .find("div")
-          .replaceWith(
-            '<div class="according-menu"><i class="fa fa-angle-down"></i></div>'
-          );
-        jQuery(this).next().slideDown("normal");
+
+    // hide all submenus unless they contain an active li
+    jQuery(".sidebar-submenu, .menu-content").each(function () {
+      if (!$(this).find("li.active").length) {
+        $(this).hide();
       } else {
-        jQuery(this)
-          .find("div")
-          .replaceWith(
-            '<div class="according-menu"><i class="fa fa-angle-right"></i></div>'
-          );
+        var parentTitle = $(this).prev(".sidebar-title");
+        parentTitle.addClass("active");
+        parentTitle.find("div.according-menu")
+          .replaceWith('<div class="according-menu"><i class="fa fa-angle-down"></i></div>');
+        $(this).show();
       }
     });
-    jQuery(".submenu-content").hide();
   }
 
   // toggle sidebar
@@ -229,7 +90,6 @@
     if ($(window).width() <= 1184 && !$isHidden && $bgOverlay.length === 0) {
       $('<div class="bg-overlay active"></div>').appendTo($("body"));
     }
-
     if ($isHidden && $bgOverlay.length > 0) {
       $bgOverlay.remove();
     }
@@ -254,7 +114,7 @@
     $header.addClass("close_icon");
   });
 
-  //    responsive sidebar
+  // responsive sidebar
   var $window = $(window);
   var widthwindow = $window.width();
   (function ($) {
@@ -302,16 +162,11 @@
     if (currentPosition >= sliderLimit) {
       $("#left-arrow").removeClass("disabled");
       view.stop(false, true).animate(
-        {
-          marginLeft: "-=" + move,
-        },
-        {
-          duration: 400,
-        }
+        { marginLeft: "-=" + move },
+        { duration: 400 }
       );
       if (currentPosition == sliderLimit) {
         $(this).addClass("disabled");
-        console.log("sliderLimit", sliderLimit);
       }
     }
   });
@@ -320,12 +175,8 @@
     var currentPosition = parseInt(view.css("marginLeft"));
     if (currentPosition < 0) {
       view.stop(false, true).animate(
-        {
-          marginLeft: "+=" + move,
-        },
-        {
-          duration: 400,
-        }
+        { marginLeft: "+=" + move },
+        { duration: 400 }
       );
       $("#right-arrow").removeClass("disabled");
       $("#left-arrow").removeClass("disabled");
@@ -335,132 +186,100 @@
     }
   });
 
-  // FIXED: Improved page active logic
+  // Highlight active link only (accordion mode)
   function setActiveMenuItem() {
-    if ($("#pageWrapper").hasClass("compact-wrapper")) {
-      // Clear all active states first
-      $(".sidebar-wrapper nav").find("a").removeClass("active");
-      $(".sidebar-wrapper nav").find("li").removeClass("active");
-      $(".sidebar-title").removeClass("active");
+    var current = window.location.pathname;
+    if (current.endsWith("/") && current.length > 1) {
+      current = current.slice(0, -1);
+    }
 
-      var current = window.location.pathname;
-      
-      // Remove any trailing slash for consistent comparison
-      if (current.endsWith('/') && current.length > 1) {
-        current = current.slice(0, -1);
-      }
+    var matched = false;
 
-      var foundMatch = false;
+    $(".sidebar-wrapper nav ul li a").each(function () {
+      var link = $(this).attr("href");
+      if (link && link !== "#") {
+        var cleanLink = link.endsWith("/") ? link.slice(0, -1) : link;
+        if (current === cleanLink) {
+          matched = true;
 
-      // First, try exact matches
-      $(".sidebar-wrapper nav ul li a").each(function() {
-        var link = $(this).attr("href");
-        
-        if (link && link !== '#') {
-          // Handle Django URL patterns - clean the link
-          var cleanLink = link;
-          if (cleanLink.endsWith('/')) {
-            cleanLink = cleanLink.slice(0, -1);
+          $(".sidebar-wrapper nav").find("a").removeClass("active");
+          $(".sidebar-wrapper nav").find("li").removeClass("active");
+          $(".sidebar-title").removeClass("active");
+          $(".sidebar-submenu").slideUp(0);
+
+          $(this).addClass("active");
+          $(this).parents("li").addClass("active");
+
+          var submenu = $(this).closest(".sidebar-submenu");
+          if (submenu.length) {
+            submenu.slideDown(0);
+            var parentTitle = submenu.prev(".sidebar-title");
+            parentTitle.addClass("active");
+            parentTitle.find("div.according-menu")
+              .replaceWith('<div class="according-menu"><i class="fa fa-angle-down"></i></div>');
           }
-          
-          // Check for exact match
-          if (current === cleanLink || 
-              (current === '' && cleanLink.includes('home')) ||
-              (current === '/' && cleanLink.includes('home'))) {
-            
-            $(this).addClass("active");
-            $(this).parents("li").first().addClass("active");
-            
-            // Handle parent menu expansion for submenu items
-            var parentSubmenu = $(this).closest(".sidebar-submenu");
-            if (parentSubmenu.length) {
-              parentSubmenu.show();
-              var parentTitle = parentSubmenu.prev(".sidebar-title");
-              parentTitle.addClass("active");
-              parentTitle.find("div.according-menu")
-                .replaceWith('<div class="according-menu"><i class="fa fa-angle-down"></i></div>');
-            }
-            
-            foundMatch = true;
-            return false; // Break the loop
-          }
+          return false;
         }
-      });
-
-      // If no exact match found, try partial matching (more lenient)
-      if (!foundMatch) {
-        $(".sidebar-wrapper nav ul li a").each(function() {
-          var link = $(this).attr("href");
-          
-          if (link && link !== '#' && current.length > 1) {
-            // Clean the link for comparison
-            var cleanLink = link;
-            if (cleanLink.endsWith('/')) {
-              cleanLink = cleanLink.slice(0, -1);
-            }
-            
-            // Check if current path contains the link or vice versa
-            if (current.includes(cleanLink) || cleanLink.includes(current)) {
-              $(this).addClass("active");
-              $(this).parents("li").first().addClass("active");
-              
-              // Handle parent menu expansion for submenu items
-              var parentSubmenu = $(this).closest(".sidebar-submenu");
-              if (parentSubmenu.length) {
-                parentSubmenu.show();
-                var parentTitle = parentSubmenu.prev(".sidebar-title");
-                parentTitle.addClass("active");
-                parentTitle.find("div.according-menu")
-                  .replaceWith('<div class="according-menu"><i class="fa fa-angle-down"></i></div>');
-              }
-              
-              return false; // Break the loop
-            }
-          }
-        });
       }
+    });
+
+    // ⚠️ if no match (like Products page), don’t collapse user toggle
+    if (!matched) {
+      return;
     }
   }
 
-  // Call the function when page loads
-  $(document).ready(function() {
+  $(document).ready(function () {
+    setActiveMenuItem();
+
+    var lastOpen = localStorage.getItem("sidebar-open-group");
+    if (lastOpen) {
+      var $title = $('.sidebar-title[data-group="' + lastOpen + '"]');
+      if ($title.length) {
+        $title.addClass("active");
+        $title.find("div.according-menu").replaceWith(
+          '<div class="according-menu"><i class="fa fa-angle-down"></i></div>'
+        );
+        $title.next().show();
+      }
+    }
+  });
+
+  $(window).on("popstate", function () {
     setActiveMenuItem();
   });
 
-  // Also call it after any navigation changes (if using AJAX)
-  $(window).on('popstate', function() {
-    setActiveMenuItem();
-  });
-
-  // Function to manually set active state (useful for dynamic content)
-  window.setActiveMenuByUrl = function(urlName) {
-    // Clear all active states
+  // Function to manually set active state (accordion mode)
+  window.setActiveMenuByUrl = function (urlName) {
     $(".sidebar-wrapper nav").find("a").removeClass("active");
     $(".sidebar-wrapper nav").find("li").removeClass("active");
     $(".sidebar-title").removeClass("active");
-    
-    // Find and activate the matching link
-    $(".sidebar-wrapper nav ul li a").each(function() {
+
+    // close all before opening
+    $(".sidebar-submenu").slideUp(0);
+    $(".sidebar-title .according-menu")
+      .replaceWith('<div class="according-menu"><i class="fa fa-angle-right"></i></div>');
+
+    $(".sidebar-wrapper nav ul li a").each(function () {
       var href = $(this).attr("href");
       if (href && href.includes(urlName)) {
         $(this).addClass("active");
         $(this).parents("li").first().addClass("active");
-        
-        // Handle parent menu expansion
+
         var parentSubmenu = $(this).closest(".sidebar-submenu");
         if (parentSubmenu.length) {
-          parentSubmenu.show();
+          parentSubmenu.slideDown(0);
           var parentTitle = parentSubmenu.prev(".sidebar-title");
           parentTitle.addClass("active");
           parentTitle.find("div.according-menu")
             .replaceWith('<div class="according-menu"><i class="fa fa-angle-down"></i></div>');
         }
-        
         return false;
       }
     });
   };
 
+  // --- other menu behaviors remain unchanged ---
   $(".left-header .mega-menu .nav-link").on("click", function (event) {
     event.stopPropagation();
     $(this).parent().children(".mega-menu-container").toggleClass("show");
@@ -521,7 +340,6 @@
     $(this).parent().children("ul").toggleClass("d-block").slideToggle();
   }
 
-  // Enhanced active link scrolling
   if (
     $(".simplebar-wrapper .simplebar-content-wrapper") &&
     $("#pageWrapper").hasClass("compact-wrapper")
@@ -529,12 +347,9 @@
     var activeLink = $(".simplebar-wrapper .simplebar-content-wrapper a.active");
     if (activeLink.length > 0) {
       $(".simplebar-wrapper .simplebar-content-wrapper").animate(
-        {
-          scrollTop: activeLink.offset().top - 400,
-        },
+        { scrollTop: activeLink.offset().top - 400 },
         1000
       );
     }
   }
-
 })(jQuery);

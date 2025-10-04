@@ -113,7 +113,7 @@
                   <td class="text-nowrap">{{ u.username }}</td>
                   <td class="text-nowrap">
                     {% if u.user_type == 'operation_manager' %}Operations Manager
-                    {% elif u.user_type == 'pharmacy_manager' %}Clinic Manager
+                    {% elif u.user_type == 'pharmacy_manager' %}Pharmacy Manager
                     {% elif u.user_type == 'receptionist' %}Receptionist
                     {% elif u.user_type == 'staff' %}Staff
                     {% elif u.user_type == 'cro' %}CRO
@@ -131,7 +131,7 @@
                   </td>
                   <td class="text-end">
                     <a class="btn btn-sm btn-outline-secondary" href="{% url 'staff_edit' u.pk %}">
-                      <i class="fa fa-pen me-1"></i>Edit
+                      <i class="fa fa-pencil me-1"></i>Edit
                     </a>
                   </td>
                 </tr>

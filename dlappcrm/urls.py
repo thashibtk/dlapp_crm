@@ -6,11 +6,12 @@ from django.contrib.auth import views as auth_views
 from core import views as v
 
 urlpatterns = [
+    
     path('admin/', admin.site.urls),
 
     # auth
-    path('login/',  auth_views.LoginView.as_view(template_name='auth/login.html'), name='login'),
-    path('logout/', auth_views.LogoutView.as_view(), name='logout'),
+    path('login/', v.login_view, name='login'),
+    path('logout/', v.logout_view, name='logout'),
 
     #me
     path("me/", v.my_profile, name="my_profile"),

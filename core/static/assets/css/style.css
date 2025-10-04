@@ -1,118 +1,3 @@
-/*!*******************************************************************************************************************************************************************************************************************!*\
-  !*** css ./node_modules/css-loader/dist/cjs.js!./node_modules/postcss-loader/dist/cjs.js??ruleSet[1].rules[0].use[2]!./node_modules/sass-loader/dist/cjs.js??ruleSet[1].rules[0].use[3]!./assets/scss/style.scss ***!
-  \*******************************************************************************************************************************************************************************************************************/
-/*! -----------------------------------------------------------------------------------
-
-    Template Name: Zono Admin
-    Template URI: https://admin.pixelstrap.net/Zono/template/
-    Description: This is Admin theme
-    Author: Pixelstrap
-    Author URI: https://themeforest.net/user/pixelstrap
-
------------------------------------------------------------------------------------
-
-    1.Base css
-        1.1 Reset CSS
-        1.2 Typography CSS
-
-    2.Components css
-        2.1 According CSS
-        2.2 Alert CSS
-        2.3 Avatars CSS
-        2.4 Badge CSS
-        2.5 Bookmark CSS
-        2.6 Breadcrumb CSS
-        2.7 Basic-card CSS        
-        2.8 Scrollbar CSS
-        2.9 Buttons CSS
-        2.10 Card CSS
-        2.11 Color CSS
-        2.12 Datatable CSS
-        2.13 Datapicker CSS
-        2.14 Dropdown CSS
-        2.15 Typeahead-search CSS Start
-        2.16 Form-input CSS
-        2.17 Form-wizard CSS
-        2.18 Forms CSS
-        2.19 Icons CSS
-        2.20 List CSS
-        2.21 Loader CSS 
-        2.22 Modal CSS
-        2.23 Popover CSS
-        2.24 Print CSS
-        2.25 Radio CSS
-        2.26 Ribbon CSS
-        2.27 Range-slider CSS
-        2.28 Switch CSS
-        2.29 Tab CSS
-        2.30 Table CSS
-        2.31 Toasts CSS
-        2.32 Touchspin CSS
-        2.33 Tour CSS
-        2.34 Tree CSS
-
-    3. Pages
-        3.1 Blog CSS
-        3.2 Bookmark-app CSS
-        3.3 Cart CSS
-        3.4 Chart CSS
-        3.5 Chat CSS
-        3.6 Checkout CSS
-        3.7 Comingsoon CSS
-        3.8 Contacts CSS
-        3.9 Dashboard_2 CSS 
-        3.11 Dashboard_4 CSS
-        3.12 Dashboard_5 CSS
-        3.13 Dashboard_default CSS
-        3.14 Ecommerce CSS
-        3.16 Errorpage CSS
-        3.17 Faq CSS
-        3.18 File CSS
-        3.19 Gallery CSS
-        3.20 Helper CSS
-        3.21 Internationalization CSS
-        3.22 Job-search CSS
-        3.23 Jsgrid CSS
-        3.24 Kanban CSS
-        3.25 Knowledgebase CSS
-        3.26 Landing CSS
-        3.27 Language CSS
-        3.28 Learning CSS
-        3.29 Login CSS
-        3.30 Megaoption CSS
-        3.31 Order-history CSS
-        3.32 Page CSS
-        3.33 Pricing CSS
-        3.34 Progress CSS
-        3.35 Projectlist CSS
-        3.36 Rating CSS
-        3.37 Social-app CSS
-        3.38 Sweet-alert CSS
-        3.39 Task CSS
-        3.40 Timeline-v CSS
-        3.41 User-profile CSS
-        3.42 Wishlist CSS
-        3.43 Dashboard_6.CSS
-        3.44 Dashboard_7 CSS
-        3.45 Dashboard_8.CSS
-
-    4. Themes
-        4.1. Dark CSS
-        4.2 Theme-customizer CSS
-        4.3 Update CSS
-
-    5. Layout
-        5.1 Footer CSS
-        5.2 Grid CSS
-        5.3 Header CSS
-        5.4 Navs CSS
-        5.5 Search CSS
-        5.6 Select2 CSS
-        5.7 Sidebar CSS
-        5.8 Rtl CSS
-        5.9 Box-layout CSS
-
- */
 :root {
     --theme-default: #2b5f60;
     --theme-secondary: #c06240;
@@ -14563,7 +14448,6 @@ p.data-attributes svg {
     }
 }
 .comingsoon-bgimg {
-    background: url(images/coming-soon-bg.jpg);
     background-position: bottom;
     background-size: cover;
 }
@@ -23414,7 +23298,6 @@ footer {
 }
 .login-card {
     align-items: center;
-    background: url(images/coming-soon-bg.jpg);
     background-attachment: fixed;
     background-position: 50%;
     background-repeat: no-repeat;

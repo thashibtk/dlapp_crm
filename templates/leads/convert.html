@@ -73,6 +73,12 @@
               <div class="col-md-4">
                 <label class="form-label"><i class="fa fa-venus-mars me-1"></i>Gender</label>
                 {{ form.gender }}
+                {% if form.gender.errors %}
+                  <div class="invalid-feedback d-block">
+                    {% for e in form.gender.errors %}{{ e }}{% if not forloop.last %}<br>{% endif %}{% endfor %}
+                  </div>
+                {% endif %}
+
 
               </div>
               <div class="col-md-4">
@@ -186,11 +192,11 @@
         <hr>
         <div class="mb-2">
           <div class="small text-muted"><i class="fa fa-clock-o me-1"></i>Last Contact</div>
-          <div>{{ lead.last_contact_date|date:"Y-m-d H:i" }}</div>
+          <div>{{ lead.last_contact_date|date:"d-M-Y" }}</div>
         </div>
         <div>
           <div class="small text-muted"><i class="fa fa-calendar-check-o me-1"></i>Next Follow-up</div>
-          <div>{{ lead.next_followup_date|date:"Y-m-d H:i" }}</div>
+          <div>{{ lead.next_followup_date|date:"d-M-Y" }}</div>
         </div>
       </div>
     </div>

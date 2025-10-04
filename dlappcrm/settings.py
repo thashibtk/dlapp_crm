@@ -1,24 +1,15 @@
 from pathlib import Path
 
-# Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
 
-
-# Quick-start development settings - unsuitable for production
-# See https://docs.djangoproject.com/en/5.2/howto/deployment/checklist/
-
-# SECURITY WARNING: keep the secret key used in production secret!
 SECRET_KEY = 'django-insecure-oo8r5su^jionh6$krj7jy%zb=9@h(s^x^t90hez7a%w5ygfp$j'
 
-# SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
 ALLOWED_HOSTS = []
 
-
-# Application definition
-
 INSTALLED_APPS = [
+    'jazzmin',
     'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.contenttypes',
@@ -26,13 +17,7 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
     'core',
-    'crispy_forms',
-    'crispy_bootstrap5'
 ]
-
-
-CRISPY_ALLOWED_TEMPLATE_PACKS = "bootstrap5"
-CRISPY_TEMPLATE_PACK = "bootstrap5"
 
 
 MIDDLEWARE = [
@@ -66,12 +51,13 @@ WSGI_APPLICATION = 'dlappcrm.wsgi.application'
 
 
 # Database
-# https://docs.djangoproject.com/en/5.2/ref/settings/#databases
 
 DATABASES = {
     'default': {
-        'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': BASE_DIR / 'db.sqlite3',
+        'ENGINE': 'django.db.backends.mysql',
+        'NAME': 'dlappcrmdb',
+        'USER' : 'root',
+        'PASSWORD' : 'root'
     }
 }
 
@@ -83,7 +69,6 @@ LOGIN_REDIRECT_URL = 'dashboard'
 LOGOUT_REDIRECT_URL = 'login'
 
 # Password validation
-# https://docs.djangoproject.com/en/5.2/ref/settings/#auth-password-validators
 
 AUTH_PASSWORD_VALIDATORS = [
     {
@@ -102,7 +87,6 @@ AUTH_PASSWORD_VALIDATORS = [
 
 
 # Internationalization
-# https://docs.djangoproject.com/en/5.2/topics/i18n/
 
 LANGUAGE_CODE = 'en-us'
 
@@ -111,15 +95,92 @@ USE_I18N = True
 TIME_ZONE = 'Asia/Kolkata'
 USE_TZ = True
 
-# Static files (CSS, JavaScript, Images)
-# https://docs.djangoproject.com/en/5.2/howto/static-files/
 
 STATIC_URL = 'static/'
 
 MEDIA_URL = '/media/'
 MEDIA_ROOT = BASE_DIR / 'media'
 
-# Default primary key field type
-# https://docs.djangoproject.com/en/5.2/ref/settings/#default-auto-field
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
+
+JAZZMIN_SETTINGS = {
+    "site_title": "DLapp Admin",
+    "site_header": "DLapp Administration",
+    "site_brand": "Admin",
+    "welcome_sign": "Welcome to DLapp Admin",
+    "copyright": " DLapp Hair Regenerative Clinic",
+
+    "site_logo": "assets/images/logo/dlapp_logo_grn.png",
+    "login_logo": "assets/images/logo/dlapp_logo_grncut.png",
+
+    # 👇 Control width (Bootstrap class)
+    "login_logo_classes": "img-fluid",   # responsive
+    "site_logo_classes": "img-fluid",    # same for sidebar
+
+    # Optionally, use CSS style to force width
+    "custom_css": "assets/css/custom_admin.css",
+
+    "theme": "cosmo",
+    "dark_mode_theme": "cyborg",
+
+    "icons": {
+        # Django auth
+        "auth": "fas fa-users-cog",
+        "auth.user": "fas fa-user",
+        "auth.group": "fas fa-users",
+
+        # Core app
+        "core": "fas fa-clinic-medical",
+
+        # User Management
+        "core.user": "fas fa-user-md",
+        "core.userprofile": "fas fa-user-cog",
+        "core.employeeidsequence": "fas fa-id-card",
+
+        # Patients
+        "core.patient": "fas fa-user-injured",
+        "core.patientmedicalhistory": "fas fa-notes-medical",
+
+        # Consultations & Treatment
+        "core.hairconsultation": "fas fa-microscope",
+        "core.consultationphoto": "fas fa-camera",
+        "core.treatmentplan": "fas fa-file-medical",
+        "core.treatmentsession": "fas fa-procedures",
+        "core.followup": "fas fa-clipboard-check",
+        "core.progressphoto": "fas fa-images",
+
+        # Appointments
+        "core.appointment": "fas fa-calendar-check",
+        "core.appointmentlog": "fas fa-history",
+        "core.appointmentslot": "fas fa-clock",
+
+        # Pharmacy & Inventory
+        "core.medicinecategory": "fas fa-boxes",
+        "core.medicine": "fas fa-pills",
+        "core.medicinestock": "fas fa-capsules",
+        "core.stocktransaction": "fas fa-exchange-alt",
+
+        # Billing & Payments
+        "core.bill": "fas fa-file-invoice",
+        "core.billitem": "fas fa-file-invoice-dollar",
+        "core.payment": "fas fa-credit-card",
+        "core.service": "fas fa-concierge-bell",
+
+        # Leads / CRO
+        "core.leadsource": "fas fa-bullhorn",
+        "core.lead": "fas fa-user-plus",
+
+        # Expenses
+        "core.expensecategory": "fas fa-list-alt",
+        "core.expense": "fas fa-money-bill-wave",
+
+        # Reports
+        "core.dailyreport": "fas fa-chart-line",
+
+        # Default fallbacks
+        "default_icon_parents": "fas fa-chevron-circle-right",
+        "default_icon_children": "fas fa-circle",
+    }
+
+}

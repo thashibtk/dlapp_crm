@@ -166,10 +166,12 @@
             </label>
             <div class="row g-2">
               <div class="col-6">
-                <input type="date" class="form-control" name="from" value="{{ selected.from|date:'Y-m-d' }}">
+                <input type="date" class="form-control" name="from"
+                      value="{{ selected.from|date:'Y-m-d' }}">
               </div>
               <div class="col-6">
-                <input type="date" class="form-control" name="to" value="{{ selected.to|date:'Y-m-d' }}">
+                <input type="date" class="form-control" name="to"
+                      value="{{ selected.to|date:'Y-m-d' }}">
               </div>
             </div>
             <!-- Quick Range Buttons -->
@@ -191,7 +193,9 @@
             <label class="form-label small text-muted mb-1">
               <i class="fa fa-search me-1"></i>Search
             </label>
-            <input type="text" class="form-control" name="q" placeholder="Name / phone / email" value="{{ selected.q|default:'' }}">
+            <input type="text" class="form-control" name="q"
+                  placeholder="Name / phone / email"
+                  value="{{ selected.q|default:'' }}">
           </div>
 
           <!-- Source -->
@@ -202,7 +206,10 @@
             <select name="source" class="form-select">
               <option value="">All</option>
               {% for s in sources %}
-                <option value="{{ s.id }}" {% if selected.source|default:'' == s.id|stringformat:'s' %}selected{% endif %}>{{ s.name }}</option>
+                <option value="{{ s.id }}"
+                  {% if selected.source|default:'' == s.id|stringformat:'s' %}selected{% endif %}>
+                  {{ s.name }}
+                </option>
               {% endfor %}
             </select>
           </div>
@@ -222,11 +229,11 @@
           <!-- Action Buttons -->
           <div class="col-12 col-sm-6 col-md-4 col-lg-2">
             <label class="form-label d-none d-md-block mb-1">&nbsp;</label>
-            <div class="d-flex gap-2">
-              <button class="btn btn-primary w-100" type="submit">
+            <div class="d-flex gap-2 flex-wrap">
+              <button class="btn btn-primary flex-fill" type="submit">
                 <i class="fa fa-filter me-1"></i>Filter
               </button>
-              <a class="btn btn-outline-secondary w-100" href="{% url 'lead_list' %}">
+              <a class="btn btn-outline-secondary flex-fill" href="{% url 'lead_list' %}">
                 <i class="fa fa-refresh me-1"></i>Clear
               </a>
             </div>
@@ -235,6 +242,7 @@
         </div>
       </form>
     </div>
+
 
 
 
@@ -258,6 +266,9 @@
                        title="Filtering: All"></i>
                   </th>
                   <th class="text-nowrap"><i class="fa fa-info-circle me-1"></i>Status</th>
+                  <th class="text-nowrap">
+                    <i class="fa fa-cogs me-1"></i>Action
+                  </th>
                 </tr>
               </thead>
               <tbody>
@@ -304,11 +315,11 @@
                         {% now "d-M-Y" as today_str %}
                         {% with follow_date=l.next_followup_date|date:"d-M-Y" %}
                           {% if follow_date == today_str %}
-                            <span class="badge bg-success">Today {{ l.next_followup_date|date:"H:i" }}</span>
+                            <span class="badge bg-success">Today {{ l.next_followup_date|date:"d-M-Y" }}</span>
                           {% elif follow_ts < now_ts %}
                             <span class="badge bg-danger">Overdue {{ l.next_followup_date|date:"d-M-Y" }}</span>
                           {% elif follow_ts <= now_ts|add:"86400" %}
-                            <span class="badge bg-warning text-dark">Tomorrow {{ l.next_followup_date|date:"H:i" }}</span>
+                            <span class="badge bg-warning text-dark">Tomorrow {{ l.next_followup_date|date:"d-M-Y" }}</span>
                           {% else %}
                             <span class="badge bg-info">{{ l.next_followup_date|date:"d-M-Y" }}</span>
                           {% endif %}
@@ -324,6 +335,12 @@
                       {% else %}
                         <span class="badge text-bg-warning text-dark"><i class="fa fa-hourglass-half me-1"></i>Open</span>
                       {% endif %}
+                    </td>
+                    <td class="text-nowrap">
+                      <a class="btn btn-sm btn-outline-secondary" href="{% url 'lead_detail' l.pk %}">
+                        <i class="fa fa-eye me-1"></i>View
+                      </a>
+                      
                     </td>
                   </tr>
                   {% endwith %}

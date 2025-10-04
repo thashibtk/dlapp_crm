@@ -634,6 +634,7 @@ STAFFABLE_USER_TYPES = [
     ('consulting_doctor', 'Consulting Doctor'),
 ]
 
+
 class StaffBaseForm(forms.ModelForm):
     user_type = forms.ChoiceField(
         choices=STAFFABLE_USER_TYPES,
@@ -654,16 +655,15 @@ class StaffBaseForm(forms.ModelForm):
 
 class StaffCreateForm(StaffBaseForm):
     password1 = forms.CharField(
-        label="Password", widget=forms.PasswordInput(attrs={'class':'form-control'})
+        label="Password", widget=forms.PasswordInput(attrs={'class': 'form-control'})
     )
     password2 = forms.CharField(
-        label="Confirm Password", widget=forms.PasswordInput(attrs={'class':'form-control'})
+        label="Confirm Password", widget=forms.PasswordInput(attrs={'class': 'form-control'})
     )
 
     def clean(self):
         cleaned = super().clean()
-        p1 = cleaned.get('password1')
-        p2 = cleaned.get('password2')
+        p1, p2 = cleaned.get('password1'), cleaned.get('password2')
         if p1 and p2 and p1 != p2:
             self.add_error('password2', "Passwords do not match.")
         return cleaned
@@ -671,29 +671,38 @@ class StaffCreateForm(StaffBaseForm):
     def save(self, commit=True):
         user = super().save(commit=False)
         user.set_password(self.cleaned_data['password1'])
+        user.is_staff = True
+        if user.user_type == "super_user":
+            user.is_superuser = True
+
         if commit:
             user.save()
-            # Ensure profile and employee id for applicable roles
+
+            # ✅ create profile + employee_id if needed
             profile, _ = UserProfile.objects.get_or_create(user=user)
-            if user.user_type in {"operation_manager", "pharmacy_manager", "staff", "cro","consulting_doctor"} and not profile.employee_id:
+            if user.user_type in {
+                "receptionist", "operation_manager", "pharmacy_manager",
+                "staff", "cro", "consulting_doctor"
+            } and not profile.employee_id:
                 profile.employee_id = next_employee_id()
                 profile.save(update_fields=["employee_id"])
+
         return user
 
 
 class StaffEditForm(StaffBaseForm):
-    # Optional password reset on edit
     new_password1 = forms.CharField(
-        label="New Password", required=False, widget=forms.PasswordInput(attrs={'class':'form-control'})
+        label="New Password", required=False,
+        widget=forms.PasswordInput(attrs={'class': 'form-control'})
     )
     new_password2 = forms.CharField(
-        label="Confirm Password", required=False, widget=forms.PasswordInput(attrs={'class':'form-control'})
+        label="Confirm Password", required=False,
+        widget=forms.PasswordInput(attrs={'class': 'form-control'})
     )
 
     def clean(self):
         cleaned = super().clean()
-        p1 = cleaned.get('new_password1') or ''
-        p2 = cleaned.get('new_password2') or ''
+        p1, p2 = cleaned.get('new_password1') or '', cleaned.get('new_password2') or ''
         if p1 or p2:
             if p1 != p2:
                 self.add_error('new_password2', "Passwords do not match.")
@@ -701,13 +710,22 @@ class StaffEditForm(StaffBaseForm):
 
     def save(self, commit=True):
         user = super().save(commit=False)
+
+        # ✅ reset password if provided
         p1 = self.cleaned_data.get('new_password1')
         if p1:
             user.set_password(p1)
+
         if commit:
             user.save()
+
+            # ✅ ensure profile exists / assign employee_id if needed
             profile, _ = UserProfile.objects.get_or_create(user=user)
-            if user.user_type in {"operation_manager", "pharmacy_manager", "staff", "cro","consulting_doctor"} and not profile.employee_id:
+            if user.user_type in {
+                "receptionist", "operation_manager", "pharmacy_manager",
+                "staff", "cro", "consulting_doctor"
+            } and not profile.employee_id:
                 profile.employee_id = next_employee_id()
                 profile.save(update_fields=["employee_id"])
+
         return user

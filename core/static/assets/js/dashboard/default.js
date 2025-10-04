@@ -293,8 +293,6 @@ const lastOrdersOption = {
   ],
 };
 
-const lastOrdersChartEl = new ApexCharts(document.querySelector('#lastOrdersChart'), lastOrdersOption);
-lastOrdersChartEl.render();
 
 
 
@@ -484,9 +482,6 @@ const salesStatsOption = {
   ],
 };
 
-const salesStatsChartEl = new ApexCharts(document.querySelector('#salesStatsRadialChart'), salesStatsOption);
-salesStatsChartEl.render();
-
 
 
 /*=======/ Social Media Statics Chart /=======*/
@@ -622,11 +617,6 @@ salesStatsChartEl.render();
     ],
   };
 
-  var chartoverview = new ApexCharts(
-    document.querySelector("#orderoverview"),
-    optionsoverview
-  );  
-  chartoverview.render();
 
 /*=======/ Project Summary /=======*/
 
@@ -801,5 +791,3 @@ const groupChartOption = {
   ],
 };
 
-const groupBarChartEl = new ApexCharts(document.querySelector('#groupBarChart'), groupChartOption);
-groupBarChartEl.render();

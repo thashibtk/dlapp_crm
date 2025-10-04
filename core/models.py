@@ -104,7 +104,7 @@ class Patient(models.Model):
         if not self.file_number:
             year = timezone.now().year
             count = Patient.objects.filter(created_at__year=year).count() + 1
-            self.file_number = f"HC{year}{count:05d}"
+            self.file_number = f"DLP{year}{count:05d}"
         super().save(*args, **kwargs)
 
     def __str__(self):
@@ -903,36 +903,3 @@ class DailyReport(models.Model):
         db_table = 'daily_reports'
         ordering = ['-report_date']
 
-
-# ===============================
-# ADDITIONAL UTILITY MODELS
-# ===============================
-
-class AppointmentSlot(models.Model):
-    """Predefined appointment slots for scheduling"""
-    day_of_week = models.PositiveIntegerField()  # 0=Monday, 6=Sunday
-    start_time = models.TimeField()
-    end_time = models.TimeField()
-    doctor = models.ForeignKey(User, on_delete=models.CASCADE, related_name='appointment_slots')
-    max_appointments = models.PositiveIntegerField(default=1)
-    is_active = models.BooleanField(default=True)
-    
-    class Meta:
-        db_table = 'appointment_slots'
-        unique_together = ['day_of_week', 'start_time', 'doctor']
-        
-    def __str__(self):
-        days = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday']
-        return f"{days[self.day_of_week]} {self.start_time}-{self.end_time} - {self.doctor.get_full_name()}"
-    
-    def clean(self):
-        qs = AppointmentSlot.objects.filter(
-            doctor=self.doctor,
-            day_of_week=self.day_of_week,
-            is_active=True,
-        )
-        if self.pk: qs = qs.exclude(pk=self.pk)
-        # overlap if start < other.end AND end > other.start
-        overlaps = qs.filter(start_time__lt=self.end_time, end_time__gt=self.start_time).exists()
-        if overlaps:
-            raise ValidationError("Overlapping slot for this doctor and day.")

@@ -1,4 +1,5 @@
-from datetime import datetime
+﻿import logging
+from datetime import datetime, date, time, timedelta
 from uuid import uuid4
 from django.forms import ValidationError
 from django.shortcuts import render, redirect, get_object_or_404
@@ -28,13 +29,71 @@ from .forms import (
     ExpenseForm, ConsultationPhotoForm, PharmacyBillItemFormSet, user_can_edit_status
 )
 
-from datetime import date
 from django.views.decorators.http import require_POST, require_GET
 from django.contrib.auth.forms import PasswordChangeForm
 from django.contrib.auth import update_session_auth_hash
+from django.contrib.auth import authenticate, login, logout
 
 DOCTOR_USER_TYPES = {'doctor', 'consulting_doctor'}
 
+
+
+
+
+def _normalize_to_date(value):
+    if value is None:
+        return None
+    if isinstance(value, datetime):
+        return value.date()
+    return value
+
+def _ensure_aware(dt):
+    return timezone.make_aware(dt) if timezone.is_naive(dt) else dt
+
+def _aware_start_of_day(value):
+    value = _normalize_to_date(value)
+    if value is None:
+        return None
+    return _ensure_aware(datetime.combine(value, time.min))
+
+def _aware_start_of_next_day(value):
+    value = _normalize_to_date(value)
+    if value is None:
+        return None
+    return _ensure_aware(datetime.combine(value + timedelta(days=1), time.min))
+
+def apply_date_range(queryset, field_name, start=None, end=None):
+    start_dt = _aware_start_of_day(start)
+    if start_dt:
+        queryset = queryset.filter(**{f"{field_name}__gte": start_dt})
+    end_dt = _aware_start_of_next_day(end)
+    if end_dt:
+        queryset = queryset.filter(**{f"{field_name}__lt": end_dt})
+    return queryset
+
+
+def login_view(request):
+    if request.user.is_authenticated:
+        return redirect("dashboard")
+
+    if request.method == "POST":
+        username = request.POST.get("username")
+        password = request.POST.get("password")
+        user = authenticate(request, username=username, password=password)
+
+        if user is not None:
+            login(request, user)
+            messages.success(request, f"Welcome back, {user.get_full_name() or user.username}!")
+            return redirect("dashboard")
+        else:
+            messages.error(request, "Invalid username or password.")
+
+    return render(request, "auth/login.html")
+
+def logout_view(request):
+    logout(request)
+    messages.success(request, "You have been logged out successfully.")
+    return redirect("login")
 
 @login_required
 def my_profile(request):
@@ -71,22 +130,24 @@ def my_profile_password(request):
 # ---------------- Dashboard ----------------
 @group_required('PharmacyManager','OperationsManager','Doctor','ConsultingDoctor','Receptionist','Staff','CRO')
 def dashboard(request):
-    # -------- parse filters --------
     today = timezone.localdate()
     range_param = (request.GET.get('range') or '').strip()
     start_str = request.GET.get('from') or request.GET.get('start') or request.GET.get('date')
-    end_str   = request.GET.get('to')   or request.GET.get('end')
+    end_str = request.GET.get('to') or request.GET.get('end')
 
-    def parse_iso(d, default=None):
+    def parse_iso(value):
         try:
-            return date.fromisoformat(d) if d else default
+            return date.fromisoformat(value) if value else None
         except ValueError:
-            return default
+            return None
 
-    if range_param:
+    # Default to today if no range/date provided
+    if not range_param and not start_str and not end_str:
+        start = end = today
+        range_param = 'today'
+    elif range_param:
         if range_param == 'today':
-            start = today
-            end = today
+            start = end = today
         elif range_param == 'yesterday':
             start = today - timedelta(days=1)
             end = start
@@ -96,25 +157,26 @@ def dashboard(request):
         elif range_param == 'month':
             start = today.replace(day=1)
             if today.month == 12:
-                end = today.replace(year=today.year+1, month=1, day=1) - timedelta(days=1)
+                end = today.replace(year=today.year + 1, month=1, day=1) - timedelta(days=1)
             else:
-                end = today.replace(month=today.month+1, day=1) - timedelta(days=1)
+                end = today.replace(month=today.month + 1, day=1) - timedelta(days=1)
         else:
-            start = parse_iso(start_str, today)
-            end   = parse_iso(end_str, today)
+            start = parse_iso(start_str)
+            end = parse_iso(end_str)
     else:
-        start = parse_iso(start_str, today)
-        end   = parse_iso(end_str, today)
+        start = parse_iso(start_str)
+        end = parse_iso(end_str)
 
-    # normalize inverted dates
-    if end and start and end < start:
+    if start and end and end < start:
         start, end = end, start
 
-    # ---------- label helpers ----------
     def _format_range_label(rng, dfrom, dto):
-        # Ensure dates
-        dfrom = dfrom or today
-        dto   = dto or dfrom
+        if not dfrom and not dto:
+            return "All Time"
+        if not dfrom:
+            dfrom = dto
+        if not dto:
+            dto = dfrom
 
         if rng == 'today':
             return "Today"
@@ -125,20 +187,18 @@ def dashboard(request):
         if rng == 'month':
             return "This month"
 
-        # Custom/explicit date range
         if dfrom == dto:
             return dfrom.strftime("%d %b %Y")
         if dfrom.year == dto.year:
             if dfrom.month == dto.month:
-                # e.g., "03–14 Sep 2025"
-                return f"{dfrom.strftime('%d')}–{dto.strftime('%d %b %Y')}"
-            # e.g., "28 Aug – 03 Sep 2025"
-            return f"{dfrom.strftime('%d %b')} – {dto.strftime('%d %b %Y')}"
-        # e.g., "28 Dec 2024 – 03 Jan 2025"
-        return f"{dfrom.strftime('%d %b %Y')} – {dto.strftime('%d %b %Y')}"
+                return f"{dfrom.strftime('%d')}-{dto.strftime('%d %b %Y')}"
+            return f"{dfrom.strftime('%d %b')} - {dto.strftime('%d %b %Y')}"
+        return f"{dfrom.strftime('%d %b %Y')} - {dto.strftime('%d %b %Y')}"
 
     def _kpi_day_label(rng, dfrom, dto):
-        if rng in {'today', ''} and not (start_str or end_str):
+        if not dfrom and not dto:
+            return "All Time"
+        if rng == 'today':
             return "Today"
         if rng == 'yesterday':
             return "Yesterday"
@@ -146,53 +206,44 @@ def dashboard(request):
             return "Last 7 days"
         if rng == 'month':
             return "This month"
-        # Custom
         return _format_range_label(rng, dfrom, dto)
 
     def _kpi_billed_label(rng, dfrom, dto):
+        base = _format_range_label(rng, dfrom, dto)
         if rng == 'month' and not (start_str or end_str):
             return "This Month Billed"
-        base = _format_range_label(rng, dfrom, dto)
-        return f"Billed — {base}"
+        return f"Billed - {base}"
 
     kpi_range_label = _format_range_label(range_param, start, end)
-    kpi_day_label   = _kpi_day_label(range_param, start, end)
-    kpi_billed_lbl  = _kpi_billed_label(range_param, start, end)
+    kpi_day_label = _kpi_day_label(range_param, start, end)
+    kpi_billed_lbl = _kpi_billed_label(range_param, start, end)
 
-    # -------- KPIs (use selected range) --------
-    today_appts = Appointment.objects.filter(
-        appointment_date__date__gte=start,
-        appointment_date__date__lte=end
-    ).count()
+    appointments_in_range = apply_date_range(Appointment.objects.all(), 'appointment_date', start, end)
+    today_appts = appointments_in_range.count()
 
-    today_collection = Bill.objects.filter(
-        bill_date__date__gte=start,
-        bill_date__date__lte=end
-    ).aggregate(s=Coalesce(Sum('paid_amount'), Decimal('0.00')))['s']
-
-    month_billed = Bill.objects.filter(
-        bill_date__date__gte=start,
-        bill_date__date__lte=end
-    ).aggregate(s=Coalesce(Sum('total_amount'), Decimal('0.00')))['s']
+    bills_in_range = apply_date_range(Bill.objects.all(), 'bill_date', start, end)
+    today_collection = bills_in_range.aggregate(s=Coalesce(Sum('paid_amount'), Decimal('0.00')))['s']
+    month_billed = bills_in_range.aggregate(s=Coalesce(Sum('total_amount'), Decimal('0.00')))['s']
 
     outstanding_balance = Bill.objects.aggregate(
         s=Coalesce(Sum(F('total_amount') - F('paid_amount')), Decimal('0.00'))
     )['s']
 
-    # NEW: Doctor's own appointments in selected date range
     is_doctor = request.user.groups.filter(name__in=["Doctor", "ConsultingDoctor"]).exists()
     my_appts_count = 0
     if is_doctor:
-        my_appts_count = Appointment.objects.filter(
-            assigned_doctor_id=request.user.id,
-            appointment_date__date__gte=start,
-            appointment_date__date__lte=end
+        my_appts_count = apply_date_range(
+            Appointment.objects.filter(assigned_doctor_id=request.user.id),
+            'appointment_date',
+            start,
+            end,
         ).count()
 
-    # Low stock / Expenses (independent)
-    low_stock_qs = (MedicineStock.objects
-                    .select_related('medicine')
-                    .filter(current_quantity__lte=F('medicine__minimum_stock_level')))
+    low_stock_qs = (
+        MedicineStock.objects
+        .select_related('medicine')
+        .filter(current_quantity__lte=F('medicine__minimum_stock_level'))
+    )
     low_stock_count = low_stock_qs.count()
 
     pending_exp_qs = Expense.objects.filter(status='pending')
@@ -201,52 +252,69 @@ def dashboard(request):
         s=Coalesce(Sum('amount'), Decimal('0.00'))
     )['s']
 
-    # Lead conversion over selected range (by created_at date)
-    total_leads = Lead.objects.filter(created_at__date__gte=start,
-                                      created_at__date__lte=end).count()
-    converted_count = Lead.objects.filter(created_at__date__gte=start,
-                                          created_at__date__lte=end,
-                                          converted_patient__isnull=False).count()
+    leads_in_range = apply_date_range(Lead.objects.all(), 'created_at', start, end)
+    total_leads = leads_in_range.count()
+    converted_count = leads_in_range.filter(converted_patient__isnull=False).count()
     conversion_rate = round((converted_count / total_leads) * 100, 1) if total_leads else 0.0
 
-    # -------- Lists (no filters) --------
     now_dt = timezone.now()
 
-    upcoming = (Appointment.objects
-                .select_related('patient', 'assigned_doctor')
-                .filter(appointment_date__date=today, appointment_date__gte=now_dt)
-                .order_by('appointment_date')[:8])
+    upcoming = (
+        apply_date_range(
+            Appointment.objects.select_related('patient', 'assigned_doctor'),
+            'appointment_date',
+            today,
+            today,
+        )
+        .filter(appointment_date__gte=now_dt)
+        .order_by('appointment_date')[:8]
+    )
 
-    recent_bills = (Bill.objects
-                    .select_related('patient')
-                    .order_by('-bill_date')[:8])
+    recent_bills = (
+        Bill.objects
+        .select_related('patient')
+        .order_by('-bill_date')[:8]
+    )
 
     low_stock = low_stock_qs.order_by('current_quantity')[:8]
 
-    recent_leads = (Lead.objects
-                    .select_related('lead_source')
-                    .order_by('-created_at')[:8])
+    recent_leads = (
+        Lead.objects
+        .select_related('lead_source')
+        .order_by('-created_at')[:8]
+    )
 
-    # -------- Revenue Chart --------
     if not range_param and not start_str and not end_str:
-        chart_start = today - timedelta(days=9)   # default last 10 days
+        chart_start = today - timedelta(days=9)
         chart_end = today
     else:
         chart_start = start
         chart_end = end
+        if chart_start and not chart_end:
+            chart_end = chart_start
+        elif chart_end and not chart_start:
+            chart_start = chart_end
+        if not chart_start:
+            chart_start = today - timedelta(days=9)
+        if not chart_end:
+            chart_end = today
+
+    if chart_end < chart_start:
+        chart_start, chart_end = chart_end, chart_start
 
     max_days = 31
-    span = (chart_end - chart_start).days if (chart_start and chart_end) else 0
+    span = (chart_end - chart_start).days
     if span > max_days - 1:
         start_for_chart = chart_end - timedelta(days=max_days - 1)
     else:
         start_for_chart = chart_start
 
-    days = [start_for_chart + timedelta(days=i) for i in range((chart_end - start_for_chart).days + 1)]
+    day_count = (chart_end - start_for_chart).days + 1
+    days = [start_for_chart + timedelta(days=i) for i in range(day_count)]
     rev_labels = [d.strftime('%d %b') for d in days]
     rev_values = []
     for d in days:
-        v = Bill.objects.filter(bill_date__date=d).aggregate(
+        v = apply_date_range(Bill.objects.all(), 'bill_date', d, d).aggregate(
             s=Coalesce(Sum('paid_amount'), Decimal('0.00'))
         )['s']
         rev_values.append(float(v))
@@ -281,7 +349,6 @@ def dashboard(request):
             'to': end,
             'range': range_param,
         },
-        # >>> NEW: labels for template <<<
         'kpi_range_label': kpi_range_label,
         'kpi_day_label': kpi_day_label,
         'kpi_billed_label': kpi_billed_lbl,
@@ -314,10 +381,7 @@ def patient_list(request):
         start, end = end, start
 
     qs = Patient.objects.all()
-    if start:
-        qs = qs.filter(created_at__date__gte=start)
-    if end:
-        qs = qs.filter(created_at__date__lte=end)
+    qs = apply_date_range(qs, 'created_at', start, end)
 
     # ---- Annotate next follow-up per patient (DateField-aware) ----
     upcoming_sub = (FollowUp.objects
@@ -400,8 +464,6 @@ def patient_list(request):
         'today_date': today_date,
     }
     return render(request, 'patients/list.html', ctx)
-
-
 
 
 @group_required('Receptionist','OperationsManager','Doctor','CRO')
@@ -675,7 +737,6 @@ STATUS_CHOICES_UI = [
 
 ]
 
-from datetime import timedelta
 
 @group_required('Receptionist', 'CRO', 'OperationsManager', 'Doctor', 'PharmacyManager', 'Staff')
 def appointment_list(request):
@@ -686,7 +747,7 @@ def appointment_list(request):
 
     today = timezone.localdate()
     start_str = request.GET.get('from') or request.GET.get('start') or request.GET.get('date')
-    end_str = request.GET.get('to') or request.GET.get('end')
+    end_str   = request.GET.get('to') or request.GET.get('end')
 
     def parse_iso(d, default=None):
         try:
@@ -694,35 +755,31 @@ def appointment_list(request):
         except ValueError:
             return default
 
-    # Handle range parameter (server-side date calculation)
-    if range_param:
-        if range_param == 'today':
-            start = today
-            end = today
-        elif range_param == '7d':
-            start = today - timedelta(days=6)  # 6 days ago + today = 7 days
-            end = today
-        elif range_param == 'month':
-            start = today.replace(day=1)  # First day of current month
-            # Last day of current month
-            if today.month == 12:
-                end = today.replace(year=today.year+1, month=1, day=1) - timedelta(days=1)
-            else:
-                end = today.replace(month=today.month+1, day=1) - timedelta(days=1)
-        else:
-            # Fallback to manual date parsing
-            start = parse_iso(start_str, today)
-            end = parse_iso(end_str, None)
+    # --- Resolve date range ---
+    start, end = None, None
+    if range_param == 'today':
+        start = end = today
+    elif range_param == '7d':
+        start, end = today - timedelta(days=6), today
+    elif range_param == 'month':
+        start = today.replace(day=1)
+        end = (today.replace(year=today.year + 1, month=1, day=1) - timedelta(days=1)
+               if today.month == 12 else
+               today.replace(month=today.month + 1, day=1) - timedelta(days=1))
     else:
-        start = parse_iso(start_str, today)
-        end = parse_iso(end_str, None)
+        start = parse_iso(start_str, None)
+        end   = parse_iso(end_str, None)
 
-    qs = Appointment.objects.select_related('patient', 'assigned_doctor').filter(appointment_date__date__gte=start)
+    # ✅ Default to today if nothing provided
+    if not range_param and not start_str and not end_str:
+        start = end = today
+        range_param = 'today'
 
-    if end:
-        if end < start:
-            start, end = end, start
-        qs = qs.filter(appointment_date__date__lte=end)
+    if start and end and end < start:
+        start, end = end, start
+
+    qs = Appointment.objects.select_related('patient', 'assigned_doctor')
+    qs = apply_date_range(qs, 'appointment_date', start, end)
 
     if q:
         qs = qs.filter(
@@ -734,7 +791,6 @@ def appointment_list(request):
     if doctor_id and doctor_id != 'all':
         qs = qs.filter(assigned_doctor_id=doctor_id)
 
-    # Check if status is provided before filtering
     if status and status != 'all':
         qs = qs.filter(status=status)
 
@@ -747,8 +803,8 @@ def appointment_list(request):
     ctx = {
         'appointments': qs,
         'doctors': doctors,
-        'status_choices':  list(STATUS_CHOICES_UI),
-        'status_choicesfilter': [('all', 'All'),('scheduled', 'Scheduled')] + list(STATUS_CHOICES_UI),
+        'status_choices': list(STATUS_CHOICES_UI),
+        'status_choicesfilter': [('all', 'All'), ('scheduled', 'Scheduled')] + list(STATUS_CHOICES_UI),
         'selected': {
             'from': start,
             'to': end,
@@ -778,6 +834,7 @@ def my_appointment_list(request):
             return default
 
     # --- resolve date window ---
+    start = end = None
     if range_param:
         if range_param == 'today':
             start, end = today, today
@@ -790,11 +847,16 @@ def my_appointment_list(request):
             else:
                 end = today.replace(month=today.month + 1, day=1) - timedelta(days=1)
         else:
-            start = parse_iso(start_str, today)
-            end   = parse_iso(end_str, None)
+            start = parse_iso(start_str)
+            end = parse_iso(end_str)
     else:
-        start = parse_iso(start_str, today)
-        end   = parse_iso(end_str, None)
+        start = parse_iso(start_str)
+        end = parse_iso(end_str)
+
+    # ✅ Default to today if nothing provided
+    if not range_param and not start_str and not end_str:
+        start = end = today
+        range_param = 'today'
 
     if end and start and end < start:
         start, end = end, start
@@ -802,11 +864,9 @@ def my_appointment_list(request):
     # --- base queryset: ONLY this doctor’s appointments ---
     qs = (Appointment.objects
           .select_related('patient', 'assigned_doctor')
-          .filter(assigned_doctor=request.user,
-                  appointment_date__date__gte=start))
+          .filter(assigned_doctor=request.user))
 
-    if end:
-        qs = qs.filter(appointment_date__date__lte=end)
+    qs = apply_date_range(qs, 'appointment_date', start, end)
 
     # --- search ---
     if q:
@@ -1070,7 +1130,6 @@ def appointment_update_status(request, pk):
 # ---------------- Billing ----------------
 
 from django.db.models import Q, F, ExpressionWrapper, DecimalField
-from datetime import timedelta
 
 BILL_STATUS_CHOICES_UI = [
     ('paid', 'Paid'),
@@ -1093,7 +1152,7 @@ def _bill_queryset_with_filters(request, bill_type):
 
     today = timezone.localdate()
     start_str = request.GET.get('from') or request.GET.get('start') or request.GET.get('date')
-    end_str = request.GET.get('to') or request.GET.get('end')
+    end_str   = request.GET.get('to') or request.GET.get('end')
 
     def _parse_iso(d, default=None):
         if isinstance(d, date):
@@ -1103,13 +1162,13 @@ def _bill_queryset_with_filters(request, bill_type):
         except (TypeError, ValueError):
             return default
 
+    # --- resolve date window ---
+    start = end = None
     if range_param:
         if range_param == 'today':
-            start = today
-            end = today
+            start, end = today, today
         elif range_param == '7d':
-            start = today - timedelta(days=6)
-            end = today
+            start, end = today - timedelta(days=6), today
         elif range_param == 'month':
             start = today.replace(day=1)
             if today.month == 12:
@@ -1117,16 +1176,25 @@ def _bill_queryset_with_filters(request, bill_type):
             else:
                 end = today.replace(month=today.month + 1, day=1) - timedelta(days=1)
         else:
-            start = _parse_iso(start_str, today)
-            end = _parse_iso(end_str, today)
+            start = _parse_iso(start_str)
+            end = _parse_iso(end_str)
     else:
-        start = _parse_iso(start_str, today)
-        end = _parse_iso(end_str, today)
+        start = _parse_iso(start_str)
+        end = _parse_iso(end_str)
+
+    # ✅ Default to today if nothing provided
+    if not range_param and not start_str and not end_str:
+        start = end = today
+        range_param = 'today'
+
+    if start and end and end < start:
+        start, end = end, start
 
     qs = (Bill.objects
           .select_related('patient')
           .prefetch_related('payments')
-          .filter(bill_type=bill_type, bill_date__date__gte=start, bill_date__date__lte=end))
+          .filter(bill_type=bill_type))
+    qs = apply_date_range(qs, 'bill_date', start, end)
 
     if q:
         qs = qs.filter(
@@ -1172,6 +1240,8 @@ def _bill_queryset_with_filters(request, bill_type):
         'range': range_param,
     }
     return qs, selected
+
+
 @group_required('Receptionist', 'CRO', 'OperationsManager', 'Doctor', 'PharmacyManager', 'Staff')
 def service_bill_list(request):
     qs, selected = _bill_queryset_with_filters(request, bill_type='service')
@@ -1786,6 +1856,11 @@ def stock_tx_list(request):
     else:
         start, end = parse_iso(from_str, None), parse_iso(to_str, None)
 
+    # ✅ Default to today if nothing provided
+    if not range_param and not from_str and not to_str:
+        start = end = today
+        range_param = 'today'
+
     # Normalize inverted dates
     if start and end and end < start:
         start, end = end, start
@@ -1799,10 +1874,7 @@ def stock_tx_list(request):
         qs = qs.filter(transaction_type=t)
 
     # Date filter on created_at (date part)
-    if start:
-        qs = qs.filter(created_at__date__gte=start)
-    if end:
-        qs = qs.filter(created_at__date__lte=end)
+    qs = apply_date_range(qs, 'created_at', start, end)
 
     ctx = {
         'txs': qs,
@@ -1898,7 +1970,7 @@ def lead_list(request):
 
     # --- Date range (Created Date) ---
     # NOTE: If you prefer to filter by next_followup_date instead,
-    # change `created_at__date` below to `next_followup_date__date`.
+    # change the field passed to apply_date_range below.
     def parse_d(s):
         try:
             return datetime.strptime(s, '%Y-%m-%d').date()
@@ -1908,12 +1980,7 @@ def lead_list(request):
     d_from = parse_d(from_s)
     d_to   = parse_d(to_s)
 
-    if d_from and d_to:
-        qs = qs.filter(created_at__date__range=(d_from, d_to))
-    elif d_from:
-        qs = qs.filter(created_at__date__gte=d_from)
-    elif d_to:
-        qs = qs.filter(created_at__date__lte=d_to)
+    qs = apply_date_range(qs, 'created_at', d_from, d_to)
 
     ctx = {
         'leads': qs,
@@ -1935,7 +2002,7 @@ def lead_create(request):
             obj.created_by = request.user
             obj.save()
             messages.success(request, "Lead created.")
-            return redirect('lead_list')
+            return redirect('lead_detail', pk=obj.pk)
     else:
         form = LeadForm()
     return render(request, 'leads/form.html', {'form': form})
@@ -2271,14 +2338,13 @@ def staff_list(request):
         'selected': {'q': q, 'role': role},
     })
 
-
 @group_required('OperationsManager', 'Doctor')
 def staff_create(request):
     if request.method == 'POST':
         form = StaffCreateForm(request.POST)
         if form.is_valid():
             user = form.save()
-            _sync_user_role_group(user)
+            _sync_user_role_group(user)  # 👈 enforce correct group
             messages.success(request, f"Staff '{user.get_full_name() or user.username}' created.")
             return redirect('staff_list')
         messages.error(request, "Please fix the errors below.")
@@ -2299,7 +2365,7 @@ def staff_edit(request, pk):
         form = StaffEditForm(request.POST, instance=user)
         if form.is_valid():
             user = form.save()
-            _sync_user_role_group(user)
+            _sync_user_role_group(user)  # 👈 re-sync group if role changed
             messages.success(request, f"Staff '{user.get_full_name() or user.username}' updated.")
             return redirect('staff_list')
         messages.error(request, "Please fix the errors below.")
@@ -2339,8 +2405,8 @@ def finance_report(request):
         bills = (
             Bill.objects
             .select_related('patient')
-            .filter(bill_date__date__gte=start, bill_date__date__lte=end)
         )
+        bills = apply_date_range(bills, 'bill_date', start, end)
 
         total_collection = bills.aggregate(
             s=Coalesce(Sum('paid_amount'), Decimal('0.00'))
@@ -2389,10 +2455,8 @@ def finance_report(request):
         # ---------------- Leads KPIs ----------------
         # NOTE: if your Lead model uses a different created field,
         # change created_at -> created / created_on etc.
-        leads_qs = Lead.objects.filter(
-            created_at__date__gte=start,
-            created_at__date__lte=end
-        )
+        leads_qs = Lead.objects.all()
+        leads_qs = apply_date_range(leads_qs, 'created_at', start, end)
 
         total_leads = leads_qs.count()
         leads_converted = leads_qs.filter(converted_patient__isnull=False).count()
@@ -2439,7 +2503,6 @@ ROLE_GROUP_MAP = {
 }
 
 def _sync_user_role_group(user):
-    """Keep only the group corresponding to user.user_type among role groups."""
     to_remove = Group.objects.filter(name__in=ROLE_GROUPS)
     if to_remove.exists():
         user.groups.remove(*to_remove)
