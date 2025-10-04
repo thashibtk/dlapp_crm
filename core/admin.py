@@ -55,9 +55,10 @@ class ConsultationPhotoAdmin(admin.ModelAdmin):
 
 @admin.register(models.TreatmentPlan)
 class TreatmentPlanAdmin(admin.ModelAdmin):
-    list_display = ("consultation", "procedure_type", "total_sessions", "total_cost", "created_by")
-    list_filter = ("procedure_type", "created_at")
-    search_fields = ("consultation__patient__name",)
+    list_display = ("consultation", "procedure", "total_sessions", "total_cost", "created_by")
+    list_filter = ("procedure", "created_at")
+    search_fields = ("consultation__patient__name", "procedure__name")
+
 
 
 @admin.register(models.TreatmentSession)

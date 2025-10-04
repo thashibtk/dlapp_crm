@@ -466,7 +466,18 @@ class HairConsultationForm(forms.ModelForm):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        # Bootstrap classes
+
+        # restrict doctor field
+        self.fields['doctor'].queryset = (
+            User.objects.filter(
+                is_active=True,
+                user_type__in=['doctor', 'consulting_doctor']
+            ).order_by('first_name','last_name','username')
+        )
+        self.fields['doctor'].label_from_instance = lambda u: (u.get_full_name() or u.username)
+
+
+        # add bootstrap classes
         for f in self.fields.values():
             w = f.widget
             if isinstance(w, (forms.Select, forms.SelectMultiple)):
@@ -475,6 +486,7 @@ class HairConsultationForm(forms.ModelForm):
                 w.attrs['class'] = (w.attrs.get('class','') + ' form-control').strip()
             else:
                 w.attrs['class'] = (w.attrs.get('class','') + ' form-control').strip()
+
 
 class ConsultationPhotoForm(forms.ModelForm):
     class Meta:
@@ -500,7 +512,7 @@ class TreatmentPlanForm(forms.ModelForm):
     class Meta:
         model = TreatmentPlan
         fields = [
-            'primary_diagnosis','differential_factors','procedure_type',
+            'primary_diagnosis','differential_factors','procedure',
             'session_frequency','total_sessions','adjunctive_treatments',
             'expected_outcomes_explained','consent_obtained',
             'cost_per_session'
@@ -516,6 +528,13 @@ class TreatmentPlanForm(forms.ModelForm):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
+
+        # Ensure procedure shows only Service.name
+        if 'procedure' in self.fields:
+            self.fields['procedure'].queryset = Service.objects.filter(is_active=True).order_by("name")
+            self.fields['procedure'].label_from_instance = lambda obj: obj.name
+
+        # Bootstrap classes
         for f in self.fields.values():
             w = f.widget
             if isinstance(w, (forms.Select, forms.SelectMultiple)):
@@ -535,7 +554,7 @@ class FollowUpForm(forms.ModelForm):
     )
     next_followup_date = forms.DateField(
         required=False,
-        widget=forms.DateInput(attrs={'type': 'date', 'class': 'form-control datepicker', 'placeholder': 'YYYY-MM-DD'})
+        widget=forms.DateInput(attrs={'type': 'date', 'class': 'form-control datepicker', 'placeholder': 'DD-MM-YYYY'})
     )
 
     class Meta:

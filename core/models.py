@@ -132,7 +132,40 @@ class Patient(models.Model):
     def __str__(self):
         return f"{self.name} ({self.file_number})" if self.file_number else self.name
 
-    
+# Services
+
+class Service(models.Model):
+
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    code = models.CharField(max_length=30, unique=True, blank=True)  # optional SKU
+    name = models.CharField(max_length=200, unique=True)
+    default_price = models.DecimalField(max_digits=10, decimal_places=2, default=0)
+    description = models.TextField(blank=True)
+    is_active = models.BooleanField(default=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        db_table = "services"
+        ordering = ["name"]
+
+    def __str__(self):
+        return self.name
+
+
+    def save(self, *args, **kwargs):
+        if not self.code:
+            prefix = "SRV"
+            n = 1
+            last = Service.objects.exclude(code="").order_by("-created_at").first()
+            if last and last.code.startswith(prefix) and last.code[len(prefix):].isdigit():
+                n = int(last.code[len(prefix):]) + 1
+            # ensure uniqueness even if race (simple loop)
+            while Service.objects.filter(code=f"{prefix}{n:04d}").exists():
+                n += 1
+            self.code = f"{prefix}{n:04d}"
+        super().save(*args, **kwargs)
+
+
 
 class PatientMedicalHistory(models.Model):
     patient = models.OneToOneField(Patient, on_delete=models.CASCADE, related_name='medical_history')
@@ -234,40 +267,33 @@ class ConsultationPhoto(models.Model):
 # ===============================
 
 class TreatmentPlan(models.Model):
-    PROCEDURE_TYPE_CHOICES = [
-        ('prp', 'PRP'),
-        ('mesotherapy', 'Mesotherapy'),
-        ('lllt', 'LLLT'),
-        ('other', 'Other'),
-    ]
-    
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     consultation = models.OneToOneField(HairConsultation, on_delete=models.CASCADE, related_name='treatment_plan')
-    
+
     # Diagnosis
     primary_diagnosis = models.TextField()
     differential_factors = models.TextField(blank=True)
-    
+
     # Treatment Details
-    procedure_type = models.CharField(max_length=20, choices=PROCEDURE_TYPE_CHOICES)
+    procedure = models.ForeignKey(Service, on_delete=models.PROTECT, related_name="treatment_plans")
     session_frequency = models.CharField(max_length=100)  # e.g., "every 4 weeks"
     total_sessions = models.PositiveIntegerField()
-    adjunctive_treatments = models.TextField(blank=True)  # Topicals/Oral Meds
-    
+    adjunctive_treatments = models.TextField(blank=True)
+
     # Consent & Timeline
     expected_outcomes_explained = models.BooleanField(default=False)
     consent_obtained = models.BooleanField(default=False)
-    
+
     # Pricing
     cost_per_session = models.DecimalField(max_digits=10, decimal_places=2, default=0)
     total_cost = models.DecimalField(max_digits=10, decimal_places=2, default=0)
-    
+
     created_at = models.DateTimeField(auto_now_add=True)
     created_by = models.ForeignKey(User, on_delete=models.SET_NULL, null=True)
-    
+
     class Meta:
         db_table = 'treatment_plans'
-    
+
     def save(self, *args, **kwargs):
         self.total_cost = self.cost_per_session * self.total_sessions
         super().save(*args, **kwargs)
@@ -709,39 +735,6 @@ class Payment(models.Model):
 
     def __str__(self):
         return f"{self.amount} ({self.method}) for {self.patient.name}"
-
-# Services
-
-class Service(models.Model):
-
-    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
-    code = models.CharField(max_length=30, unique=True, blank=True)  # optional SKU
-    name = models.CharField(max_length=200, unique=True)
-    default_price = models.DecimalField(max_digits=10, decimal_places=2, default=0)
-    description = models.TextField(blank=True)
-    is_active = models.BooleanField(default=True)
-    created_at = models.DateTimeField(auto_now_add=True)
-
-    class Meta:
-        db_table = "services"
-        ordering = ["name"]
-
-    def __str__(self):
-        return self.name
-
-
-    def save(self, *args, **kwargs):
-        if not self.code:
-            prefix = "SRV"
-            n = 1
-            last = Service.objects.exclude(code="").order_by("-created_at").first()
-            if last and last.code.startswith(prefix) and last.code[len(prefix):].isdigit():
-                n = int(last.code[len(prefix):]) + 1
-            # ensure uniqueness even if race (simple loop)
-            while Service.objects.filter(code=f"{prefix}{n:04d}").exists():
-                n += 1
-            self.code = f"{prefix}{n:04d}"
-        super().save(*args, **kwargs)
 
 
 

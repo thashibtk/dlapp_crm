@@ -69,8 +69,9 @@
           <h6 class="text-muted mb-3">Treatment Details</h6>
           <div class="row g-3">
             <div class="col-md-4">
-              <label class="form-label" for="{{ form.procedure_type.id_for_label }}">Procedure</label>
-              {{ form.procedure_type }}
+              <label class="form-label" for="{{ form.procedure.id_for_label }}">Procedure</label>
+              {{ form.procedure }}
+
               {% if form.procedure_type.errors %}<div class="invalid-feedback d-block">{{ form.procedure_type.errors|join:", " }}</div>{% endif %}
             </div>
             <div class="col-md-4">

@@ -567,7 +567,7 @@ def consultation_detail(request, pk):
         'c': c, 'patient': c.patient, 'plan': plan, 'photos': photos,
     })
 
-@group_required('Doctor','ConsultingDoctor','OperationsManager')
+@group_required('Doctor','ConsultingDoctor','Receptionist','OperationsManager')
 def consultation_create(request, patient_id):
     patient = get_object_or_404(Patient, pk=patient_id)
     if request.method == 'POST':
@@ -590,7 +590,7 @@ def consultation_create(request, patient_id):
         'form': form, 'patient': patient, 'is_edit': False
     })
 
-@group_required('Doctor','ConsultingDoctor','OperationsManager')
+@group_required('Doctor','ConsultingDoctor','Receptionist','OperationsManager')
 def consultation_edit(request, pk):
     c = get_object_or_404(HairConsultation, pk=pk)
     if request.method == 'POST':
@@ -621,7 +621,7 @@ def consultation_photo_create(request, pk):
     return render(request, 'consultations/photo_form.html', {'form': form, 'c': c})
 
 # ---------------- Treatment Plan ----------------
-@group_required('Doctor','ConsultingDoctor','OperationsManager')
+@group_required('Doctor','ConsultingDoctor','Receptionist','OperationsManager')
 def treatment_plan_create(request, pk):
     consultation = get_object_or_404(HairConsultation, pk=pk)
     if hasattr(consultation, 'treatment_plan'):
@@ -644,7 +644,7 @@ def treatment_plan_create(request, pk):
         {'form': form, 'consultation': consultation, 'patient': consultation.patient, 'is_edit': False}
     )
 
-@group_required('Doctor','ConsultingDoctor','OperationsManager')
+@group_required('Doctor','ConsultingDoctor','Receptionist','OperationsManager')
 def treatment_plan_update(request, pk):
     consultation = get_object_or_404(HairConsultation, pk=pk)
     plan = consultation.treatment_plan
@@ -664,7 +664,7 @@ def treatment_plan_update(request, pk):
 
 # ---------------- Followups & Photos ----------------
 
-@group_required('Doctor','ConsultingDoctor','OperationsManager')
+@group_required('Doctor','ConsultingDoctor','Receptionist','OperationsManager')
 def followup_create(request, patient_id):
     patient = get_object_or_404(Patient, pk=patient_id)
     latest_plan = (TreatmentPlan.objects
@@ -693,7 +693,7 @@ def followup_create(request, patient_id):
         'is_edit': False,
     })
 
-@group_required('Doctor','ConsultingDoctor','OperationsManager')
+@group_required('Doctor','ConsultingDoctor','Receptionist','OperationsManager')
 def followup_update(request, pk):
     fu = get_object_or_404(FollowUp.objects.select_related('patient','treatment_plan'), pk=pk)
     patient = fu.patient
