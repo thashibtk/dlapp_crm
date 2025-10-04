@@ -10,18 +10,94 @@
   @media (max-width:767px){
     div.dataTables_wrapper div.dataTables_filter{flex:1 1 100%;min-width:unset;max-width:unset;margin-left:0;text-align:left;order:-1;padding:10px 0}
   }
+  
   /* Print container hidden on screen */
   .print-table-container{display:none}
+  
   @media print{
     @page{size:A4 portrait;margin:10mm 8mm 15mm 8mm}
     body{margin:0!important;padding:0!important;font-family:Arial,Helvetica,sans-serif!important;font-size:10pt!important;line-height:1.2!important;color:#000!important;background:#fff!important}
     body *{visibility:hidden!important}
     .print-table-container,.print-table-container *{visibility:visible!important}
     .print-table-container{display:block!important;position:absolute!important;left:0!important;top:0!important;width:100%!important;margin:0!important;padding:0!important;background:#fff!important}
+    
+    /* Print Header Styles */
+    .print-header {
+      display: block !important;
+      margin-bottom: 20px;
+      border-bottom: 2px solid #333;
+      padding-bottom: 15px;
+    }
+    
+    .print-header-top {
+      display: flex !important;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 12px;
+    }
+    
+    .print-header-left { 
+      flex: 0 0 auto;
+    }
+    
+    .print-header-center {
+      flex: 1;
+      text-align: center;
+    }
+    
+    .print-header img { 
+      width: 70px; 
+      height: auto; 
+    }
+    
+    .print-header h1 {
+      font-size: 22px;
+      font-weight: bold;
+      color: #2b5f60;
+      margin: 0 0 8px 0;
+    }
+    
+    .print-header-contact {
+      font-size: 11px;
+      color: #555;
+      margin-bottom: 8px;
+    }
+    
+    .print-header-addresses {
+      display: flex !important;
+      justify-content: space-between;
+      gap: 15px;
+      font-size: 10px;
+      color: #333;
+      line-height: 1.4;
+    }
+    
+    .address-item {
+      flex: 1;
+      padding: 6px 8px;
+      background-color: #f5f5f5 !important;
+      border-left: 3px solid #2b5f60 !important;
+    }
+    
+    .address-item strong {
+      display: block;
+      margin-bottom: 2px;
+      color: #2b5f60;
+    }
+    
+    /* Table Styles */
     .print-table{width:100%;border-collapse:collapse;margin-top:20px}
     .print-table th,.print-table td{border:1px solid #ddd;padding:6px;text-align:left;font-size:11px}
     .print-table th{background:#2b5f60!important;color:#fff!important}
     .print-table tbody tr:nth-child(even){background:#f9f9f9!important}
+    
+    .print-footer {
+      text-align: center;
+      margin-top: 50px;
+      font-size: 10px;
+      color: #666;
+    }
+    
     *{-webkit-print-color-adjust:exact!important;print-color-adjust:exact!important}
   }
 </style>
@@ -96,8 +172,20 @@
             <input type="text" class="form-control" name="q" placeholder="Patient / phone / file #" value="{{ selected.q|default:'' }}">
           </div>
 
+
+          <!-- Branch -->
+          <div class="col-12 col-lg-1">
+            <label class="form-label mb-1 small text-muted"><i class="fa fa-building me-1"></i>Branch</label>
+            <select class="form-select" name="branch">
+              <option value="all" {% if selected.branch == 'all' %}selected{% endif %}>All branches</option>
+              {% for b in branches %}
+                <option value="{{ b.pk }}" {% if selected.branch == b.pk|stringformat:'s' %}selected{% endif %}>{{ b.name }}</option>
+              {% endfor %}
+            </select>
+          </div>
+
           <!-- Status -->
-          <div class="col-12 col-lg-2">
+          <div class="col-12 col-lg-1">
             <label class="form-label mb-1 small text-muted"><i class="fa fa-list me-1"></i>Status</label>
             <select class="form-select" name="status">
               {% for v,label in status_choicesfilter %}
@@ -131,6 +219,7 @@
                   <th class="text-nowrap"><i class="fa fa-clock-o me-1"></i>Date & Time</th>
                   <th><i class="fa fa-user me-1"></i>Patient</th>
                   <th><i class="fa fa-phone me-1"></i>Phone</th>
+                  <th class="text-nowrap"><i class="fa fa-building me-1"></i>Branch</th>
                   <th class="text-nowrap"><i class="fa fa-flag me-1"></i>Status</th>
                   <th class="text-nowrap"><i class="fa fa-ellipsis-h me-1"></i>Action</th>
                 </tr>
@@ -154,6 +243,11 @@
                   </td>
                   <td class="text-nowrap">{{ a.patient.phone_number|default:"—" }}</td>
                   <td class="text-nowrap">
+                    {% if a.branch %}
+                      {{ a.branch.name }}
+                    {% else %}&mdash;{% endif %}
+                  </td>
+                  <td class="text-nowrap">
                     {% if a.status == 'scheduled' %}
                       <span class="badge text-bg-secondary"><i class="fa fa-circle me-1"></i>Scheduled</span>
                     {% elif a.status == 'completed' %}
@@ -174,7 +268,7 @@
                 </tr>
                 {% empty %}
                 <tr class="bg-light">
-                  <td colspan="6" class="text-center text-muted py-4">
+                  <td colspan="7" class="text-center text-muted py-4">
                     <i class="fa fa-inbox me-2"></i>No appointments.
                   </td>
                 </tr>
@@ -191,21 +285,48 @@
 
 <!-- Print-only container -->
 <div class="print-table-container">
-  <div class="print-header" style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:20px;border-bottom:2px solid #333;padding-bottom:10px;">
-    <div><img src="{% static 'assets/images/logo/dlapp_logo_grncut.png' %}" alt="DLapp" style="width:80px;height:auto"></div>
-    <div style="text-align:right">
-      <h1 style="font-size:24px;margin:0;color:#2b5f60">D Lapp Hair Regenerative Clinic</h1>
-      <p style="margin:5px 0;font-size:12px;color:#555">Kottayil Arcade, Malaparamba,<br>Kozhikode, Kerala 673009<br>Phone: +91 8593957885 | Email: info@dlapphairclinic.com</p>
+  <div class="print-header">
+    <div class="print-header-top">
+      <div class="print-header-left">
+        <img src="{% static 'assets/images/logo/dlapp_logo_grncut.png' %}" alt="DLapp">
+      </div>
+      <div class="print-header-center">
+        <h1>D Lapp Hair Regenerative Clinic</h1>
+        <div class="print-header-contact">
+          Phone: +91 8593957885 | +91 9845337296 | Email: info@dlapphairclinic.com
+        </div>
+      </div>
+    </div>
+    
+    <div class="print-header-addresses">
+      <div class="address-item">
+        <strong>Calicut - Malaparamba</strong>
+        Kottayil Arcade, Malaparamba<br>
+        Calicut-673009
+      </div>
+      <div class="address-item">
+        <strong>Calicut - Kotooli</strong>
+        Breeze Building, Netaji Nagar<br>
+        Kotooli, Kozhikode-673016
+      </div>
+      <div class="address-item">
+        <strong>Kochi - Kadavanthra</strong>
+        RWA-N-16, Cherupushpam Lane 1<br>
+        Kadavanthra, Kochi, 682020
+      </div>
     </div>
   </div>
+  
   <div style="text-align:center;margin-bottom:15px">
     <h2 style="font-size:18px;margin:0 0 5px">My Appointments</h2>
-    <p>
+    <p style="font-size:11px;color:#555;">
       Status: <span id="printStatusDisplay">All</span> |
+      Branch: <span id="printBranchDisplay">All</span> |
       Date Range: <span id="printDateRangeDisplay">All Dates</span> |
       Total: <strong>{{ appointments|length }}</strong>
     </p>
   </div>
+  
   <table class="print-table">
     <thead>
       <tr>
@@ -213,6 +334,7 @@
         <th style="width:22%;">Date & Time</th>
         <th style="width:28%;">Patient</th>
         <th style="width:18%;">Phone</th>
+        <th style="width:18%;">Branch</th>
         <th style="width:16%;">Status</th>
       </tr>
     </thead>
@@ -223,12 +345,14 @@
         <td>{{ a.appointment_date|date:"d-M-Y h:i A" }}</td>
         <td>{{ a.patient.name }}</td>
         <td>{{ a.patient.phone_number|default:"—" }}</td>
+        <td>{% if a.branch %}{{ a.branch.name }}{% else %}&mdash;{% endif %}</td>
         <td>{{ a.get_status_display }}</td>
       </tr>
       {% endfor %}
     </tbody>
   </table>
-  <div class="print-footer" style="text-align:center;margin-top:40px;font-size:10px;color:#666">
+  
+  <div class="print-footer">
     Generated by {{ request.user.get_full_name|default:request.user.username }} on {% now "F d, Y, h:i A" %}
   </div>
 </div>
@@ -238,11 +362,19 @@
 function printAppointments(){
   const form   = document.getElementById('filterForm');
   const status = form?.querySelector('select[name="status"]');
+  const branch = form?.querySelector('select[name="branch"]');
   const fromI  = form?.querySelector('input[name="from"]');
   const toI    = form?.querySelector('input[name="to"]');
 
-  document.getElementById('printStatusDisplay').textContent =
-    status && status.value ? status.options[status.selectedIndex].text : 'All';
+  const statusDisplay = document.getElementById('printStatusDisplay');
+  statusDisplay.textContent = status && status.value ? status.options[status.selectedIndex].text : 'All';
+
+  const branchDisplay = document.getElementById('printBranchDisplay');
+  if (branch && branch.value && branch.value !== 'all') {
+    branchDisplay.textContent = branch.options[branch.selectedIndex].text;
+  } else {
+    branchDisplay.textContent = 'All';
+  }
 
   let dr = 'All Dates';
   if (fromI?.value && toI?.value) dr = `From ${fromI.value} to ${toI.value}`;
@@ -252,6 +384,7 @@ function printAppointments(){
 
   window.print();
 }
+
 </script>
 
 <script>

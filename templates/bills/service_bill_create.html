@@ -77,7 +77,7 @@
                               data-balance="{{ p.balance }}"
                               data-search="{{ p.name }} {{ p.phone_number }} {{ p.file_number }}"
                               {% if header_form.initial.patient == p.pk %}selected{% endif %}>
-                        {{ p.name }}
+                        {{ p }}
                       </option>
                     {% endfor %}
                   </select>
@@ -258,7 +258,7 @@
       </div>
     </td>
     <td>{{ formset.empty_form.quantity }}</td>
-    <td>{{ formset.empty_form.unit_price }}<div class="form-text small">Auto-filled & read-only</div></td>
+    <td>{{ formset.empty_form.unit_price }}
     <td class="text-end fw-semibold"><span class="line-total">₹ 0.00</span></td>
     <td class="text-center">
       {% if formset.empty_form.DELETE %}{{ formset.empty_form.DELETE.as_hidden }}{% endif %}
@@ -489,11 +489,14 @@ document.addEventListener('DOMContentLoaded', function(){
     const detailsEl = document.getElementById('patient-details');
     if (detailsEl) {
       const details = [];
+      if (opt.dataset.file) details.push(`File #: ${opt.dataset.file}`);
+      if (opt.dataset.address) details.push(`Address: ${opt.dataset.address}`);
+      if (opt.dataset.city) details.push(`City: ${opt.dataset.city}`);
       if (opt.dataset.age) details.push(`Age: ${opt.dataset.age}`);
       if (opt.dataset.gender) details.push(`Gender: ${opt.dataset.gender}`);
       if (opt.dataset.phone) details.push(`Phone: ${opt.dataset.phone}`);
-      if (opt.dataset.file) details.push(`File #: ${opt.dataset.file}`);
-      detailsEl.innerHTML = details.join(' | ');
+
+      detailsEl.innerHTML = details.join('<br>');
     }
 
     try {

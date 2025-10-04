@@ -18,7 +18,7 @@
   .badge-unpaid { background:#fde8e8; color:#a61b1b; border:1px solid #fac5c5; }
 </style>
 <style>
-  /* --- Print Styles - A4 Shared (Appointments & Bills identical) --- */
+  /* --- Print Styles - A4 Shared (Appointments & Bills) --- */
   .print-table-container,
   .bill-print-container { display: none; }
 
@@ -36,7 +36,7 @@
     /* Hide everything by default */
     body * { visibility: hidden !important; }
 
-    /* Show only the print containers (either page) */
+    /* Show only the print containers */
     .print-table-container, .print-table-container *,
     .bill-print-container, .bill-print-container * {
       visibility: visible !important;
@@ -52,24 +52,67 @@
       background: #fff !important;
     }
 
-    /* Header matches Appointments exactly */
+    /* Updated Header Layout */
     .print-header {
+      display: block !important;
+      margin-bottom: 20px;
+      border-bottom: 2px solid #333;
+      padding-bottom: 15px;
+    }
+    
+    .print-header-top {
       display: flex !important;
       justify-content: space-between;
-      align-items: flex-start;
-      margin-bottom: 30px;
-      border-bottom: 2px solid #333;
-      padding-bottom: 10px;
+      align-items: center;
+      margin-bottom: 12px;
     }
-    .print-header-left { text-align: left; }
-    .print-header-right { text-align: right; }
-    .print-header img { width: 80px; height: auto; }
+    
+    .print-header-left { 
+      flex: 0 0 auto;
+    }
+    
+    .print-header-center {
+      flex: 1;
+      text-align: center;
+    }
+    
+    .print-header img { 
+      width: 70px; 
+      height: auto; 
+    }
 
     .print-header h1 {
-      font-size: 24px; font-weight: bold;
-      color: #2b5f60; margin: 0;
+      font-size: 22px; font-weight: bold;
+      color: #2b5f60; margin: 0 0 8px 0;
     }
-    .print-header p { margin: 5px 0; font-size: 12px; color: #555; }
+    
+    .print-header-contact {
+      font-size: 11px;
+      color: #555;
+      margin-bottom: 8px;
+    }
+    
+    .print-header-addresses {
+      display: flex !important;
+      justify-content: space-between;
+      gap: 15px;
+      font-size: 10px;
+      color: #333;
+      line-height: 1.4;
+    }
+    
+    .address-item {
+      flex: 1;
+      padding: 6px 8px;
+      background-color: #f5f5f5 !important;
+      border-left: 3px solid #2b5f60 !important;
+    }
+    
+    .address-item strong {
+      display: block;
+      margin-bottom: 2px;
+      color: #2b5f60;
+    }
 
     .print-table { width: 100%; border-collapse: collapse; margin-top: 20px; }
 
@@ -294,22 +337,40 @@
 
 <div class="bill-print-container">
   <div class="print-header">
-    <div class="print-header-left">
-      <img src="{% static 'assets/images/logo/dlapp_logo_grncut.png' %}" alt="DLapp">
+    <div class="print-header-top">
+      <div class="print-header-left">
+        <img src="{% static 'assets/images/logo/dlapp_logo_grncut.png' %}" alt="DLapp">
+      </div>
+      <div class="print-header-center">
+        <h1>D Lapp Hair Regenerative Clinic</h1>
+        <div class="print-header-contact">
+          Phone: +91 8593957885 | +91 9845337296 | Email: info@dlapphairclinic.com
+        </div>
+      </div>
     </div>
-    <div class="print-header-right">
-      <h1>D Lapp Hair Regenerative Clinic</h1>
-      <p>
-        Kottayil Arcade, Malaparamba,<br>
-        Kozhikode, Kerala 673009<br>
-        Phone: +91 8593957885 | Email: info@dlapphairclinic.com
-      </p>
+    
+    <div class="print-header-addresses">
+      <div class="address-item">
+        <strong>Calicut - Malaparamba</strong>
+        Kottayil Arcade, Malaparamba<br>
+        Calicut-673009
+      </div>
+      <div class="address-item">
+        <strong>Calicut - Kotooli</strong>
+        Breeze Building, Netaji Nagar<br>
+        Kotooli, Kozhikode-673016
+      </div>
+      <div class="address-item">
+        <strong>Kochi - Kadavanthra</strong>
+        RWA-N-16, Cherupushpam Lane 1<br>
+        Kadavanthra, Kochi, 682020
+      </div>
     </div>
   </div>
 
   <div style="text-align:center; margin-bottom:20px;">
     <h2 style="font-size:18px; margin-bottom:5px;">{{ title }} List</h2>
-    <p>
+    <p style="font-size:11px;color:#555;">
       Balance: <span id="printBalance"></span> |
       Method: <span id="printMethod"></span> |
       Date Range: <span id="printDateRange"></span>

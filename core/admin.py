@@ -68,13 +68,63 @@ class TreatmentSessionAdmin(admin.ModelAdmin):
 
 
 # ==========================
+# BRANCHES
+# ==========================
+@admin.register(models.Branch)
+class BranchAdmin(admin.ModelAdmin):
+    list_display = ("name", "phone_number", "is_active")
+    list_filter = ("is_active",)
+    search_fields = ("name", "phone_number", "email")
+
+    def has_module_permission(self, request):
+        return (
+            request.user.is_superuser or
+            in_group(request.user, "OperationsManager") or
+            in_group(request.user, "Doctor") or
+            request.user.has_perm("core.view_lead")
+        )
+
+    def has_view_permission(self, request, obj=None):
+        return (
+            request.user.is_superuser or
+            in_group(request.user, "OperationsManager") or
+            in_group(request.user, "Doctor") or
+            request.user.has_perm("core.view_lead")
+        )
+
+    def has_add_permission(self, request):
+        return (
+            request.user.is_superuser or
+            in_group(request.user, "OperationsManager") or
+            in_group(request.user, "Doctor") or
+            request.user.has_perm("core.add_lead")
+        )
+
+    def has_change_permission(self, request, obj=None):
+        return (
+            request.user.is_superuser or
+            in_group(request.user, "CRO") or
+            in_group(request.user, "Receptionist") or
+            request.user.has_perm("core.change_lead")
+        )
+
+    def has_delete_permission(self, request, obj=None):
+        return (
+            request.user.is_superuser or
+            in_group(request.user, "CRO") or
+            in_group(request.user, "Receptionist") or
+            request.user.has_perm("core.delete_lead")
+        )
+
+
+# ==========================
 # APPOINTMENTS
 # ==========================
 @admin.register(models.Appointment)
 class AppointmentAdmin(admin.ModelAdmin):
-    list_display = ("appointment_date", "patient", "status", "assigned_doctor", "created_by")
-    list_filter = ("status", "appointment_date")
-    search_fields = ("patient__name", "patient__phone_number")
+    list_display = ("appointment_date", "patient", "branch", "status", "assigned_doctor", "created_by")
+    list_filter = ("status", "appointment_date", "branch")
+    search_fields = ("patient__name", "patient__phone_number", "branch__name")
 
     def has_change_permission(self, request, obj=None):
         if (

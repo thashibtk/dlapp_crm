@@ -77,6 +77,25 @@
               {% endif %}
             </div>
 
+            <!-- Branch -->
+            <div class="col-md-3">
+              <label class="form-label" for="{{ form.branch.id_for_label }}">
+                <i class="fa fa-building me-1"></i>Branch
+              </label>
+              <div class="position-relative">
+                {{ form.branch }}
+                <div class="search-dropdown" id="branch-dropdown" style="display: none;">
+                  <div class="search-input">
+                    <input type="text" class="form-control" id="branch-search" placeholder="Search branches...">
+                  </div>
+                  <div class="search-results" id="branch-results"></div>
+                </div>
+              </div>
+              {% if form.branch.errors %}
+                <div class="invalid-feedback d-block"><i class="fa fa-warning me-1"></i>{{ form.branch.errors|join:", " }}</div>
+              {% endif %}
+            </div>
+
             <!-- Appointment Date -->
             <div class="col-md-3">
               <label class="form-label" for="{{ form.appointment_date.id_for_label }}">
@@ -407,6 +426,7 @@ document.addEventListener('DOMContentLoaded', function () {
   // Initialize searchable dropdowns
   const patientSelect = document.querySelector('[name="patient"]');
   const doctorSelect = document.querySelector('[name="assigned_doctor"]');
+  const branchSelect = document.querySelector('[name="branch"]');
 
   if (patientSelect) {
     createSearchableDropdown(patientSelect, 'patient-search', 'patient-dropdown', 'patient-results');
@@ -414,6 +434,10 @@ document.addEventListener('DOMContentLoaded', function () {
 
   if (doctorSelect) {
     createSearchableDropdown(doctorSelect, 'doctor-search', 'doctor-dropdown', 'doctor-results');
+  }
+
+  if (branchSelect) {
+    createSearchableDropdown(branchSelect, 'branch-search', 'branch-dropdown', 'branch-results');
   }
 });
 </script>

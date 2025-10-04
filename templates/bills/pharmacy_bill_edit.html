@@ -143,7 +143,6 @@
                       <td>
                         {{ f.unit_price }}
                         {% if f.unit_price.errors %}<div class="invalid-feedback d-block">{{ f.unit_price.errors|join:", " }}</div>{% endif %}
-                        <div class="form-text small">Auto-filled &amp; read-only</div>
                       </td>
                       <td class="text-end fw-semibold"><span class="line-total">₹ 0.00</span></td>
                       <td class="text-center">
@@ -251,7 +250,7 @@
       {{ formset.empty_form.quantity }}
       <div class="stock-warning mt-1 small text-danger" style="display:none;"></div>
     </td>
-    <td>{{ formset.empty_form.unit_price }}<div class="form-text small">Auto-filled &amp; read-only</div></td>
+    <td>{{ formset.empty_form.unit_price }}</td>
     <td class="text-end fw-semibold"><span class="line-total">₹ 0.00</span></td>
     <td class="text-center">
       {% if formset.empty_form.DELETE %}{{ formset.empty_form.DELETE.as_hidden }}{% endif %}
@@ -259,6 +258,7 @@
     </td>
   </tr>
 </template>
+
 
 <script>
 document.addEventListener('DOMContentLoaded', function(){
@@ -275,12 +275,14 @@ document.addEventListener('DOMContentLoaded', function(){
 
   const patientSel = document.querySelector('.patient-select');
   const patientBalEl = document.getElementById('patient-balance');
+  const billBalanceSummaryEl = document.getElementById('bill-balance-summary');
 
   let patientBalance = 0;  // +ve = due, -ve = advance
-  let payDirty = false;
+  let payDirty = false;    // user has manually edited the paid amount
 
-  function toNum(v){ return parseFloat(String(v??'').replace(/,/g,'')) || 0; }
-  function fmt(n){ return '₹ ' + (isFinite(n)? Number(n) : 0).toFixed(2); }
+  // Helpers
+  const toNum = (v) => parseFloat(String(v ?? '').replace(/[^0-9.-]/g, '')) || 0;
+  const fmt   = (n) => '₹ ' + (isFinite(n) ? Number(n) : 0).toFixed(2);
 
   // Searchable select
   function makeSearchableSelect(select, options = {}) {
@@ -356,16 +358,45 @@ document.addEventListener('DOMContentLoaded', function(){
     document.addEventListener('click', function(e){ if (!wrapper.contains(e.target)) hideDropdown(); });
   }
 
+  // Balance labels
   function setPatientLabels() {
     const labelText = patientBalance < 0
-      ? `Advance ${fmt(Math.abs(patientBalance)).replace('₹ ','₹ ')}`
+      ? `Advance ${fmt(Math.abs(patientBalance)).replace('₹ ', '₹ ')}`
       : `Due ${fmt(patientBalance)}`;
     if (patientBalEl) patientBalEl.textContent = labelText;
+    if (billBalanceSummaryEl) {
+      billBalanceSummaryEl.innerHTML =
+        `<span class="badge ${patientBalance<0?'bg-success-subtle text-success border border-success':'bg-warning-subtle text-warning border border-warning'}">
+           <i class="fa ${patientBalance<0?'fa-level-up':'fa-level-down'} me-1"></i>${labelText}
+         </span>`;
+    }
   }
 
+  // Patient balance + details
   async function updatePatientBalance() {
     const opt = patientSel?.options[patientSel.selectedIndex];
-    if (!opt || !opt.value){ patientBalance = 0; setPatientLabels(); return; }
+    const detailsEl = document.getElementById('patient-details');
+
+    if (!opt || !opt.value){
+      patientBalance = 0;
+      setPatientLabels();
+      if (detailsEl) detailsEl.innerHTML = '';
+      return;
+    }
+
+    // details from data-*
+    if (detailsEl) {
+      const details = [];
+      if (opt.dataset.file)    details.push(`File #: ${opt.dataset.file}`);
+      if (opt.dataset.address) details.push(`Address: ${opt.dataset.address}`);
+      if (opt.dataset.city)    details.push(`City: ${opt.dataset.city}`);
+      if (opt.dataset.age)     details.push(`Age: ${opt.dataset.age}`);
+      if (opt.dataset.gender)  details.push(`Gender: ${opt.dataset.gender}`);
+      if (opt.dataset.phone)   details.push(`Phone: ${opt.dataset.phone}`);
+      detailsEl.innerHTML = details.join('<br>');
+    }
+
+    // balance fetch with fallback
     try {
       const res = await fetch(`/api/patients/${opt.value}/balance/`);
       const data = await res.json();
@@ -377,6 +408,7 @@ document.addEventListener('DOMContentLoaded', function(){
   }
 
   function bindRow(row){
+    // beautify
     row.querySelectorAll('select').forEach(s=>s.classList.add('form-select'));
     row.querySelectorAll('input[type="number"],input[type="text"]').forEach(i=>i.classList.add('form-control'));
 
@@ -389,30 +421,32 @@ document.addEventListener('DOMContentLoaded', function(){
     const medicineInfo = row.querySelector('.medicine-info');
     const stockWarning = row.querySelector('.stock-warning');
 
-    // Unit price read-only
+    // read-only unit price (managed by selection)
     if (unit) { unit.readOnly = true; unit.setAttribute('readonly','readonly'); unit.classList.add('bg-light'); }
 
-    // Get stock from option
+    // helpers
     const getStockFromOption = (opt) => {
       if (!opt) return 0;
       const stock = opt.dataset.stock ?? opt.getAttribute('data-stock') ?? '0';
       return parseInt(stock) || 0;
     };
 
-    // Show medicine info
-    const showMedicineInfo = (opt) => {
-      if (!opt || !medicineInfo) return;
-      const info = [];
-      if (opt.dataset.expiry) info.push(`Expiry: ${opt.dataset.expiry}`);
-      if (opt.dataset.stock) info.push(`Stock: ${opt.dataset.stock}`);
-      medicineInfo.innerHTML = info.join(' | ');
-    };
+    function showMedicineInfo(opt){
+      if (!medicineInfo) return;
+      if (!opt || !opt.value){
+        medicineInfo.textContent = '';
+        return;
+      }
+      const stock = getStockFromOption(opt);
+      const expiry = opt.getAttribute('data-expiry') || '';
+      medicineInfo.innerHTML = `Stock: <strong>${stock}</strong>${expiry ? ` • Exp: <strong>${expiry}</strong>` : ''}`;
+    }
 
     function recalcLine(){
       const q=toNum(qty?.value), u=toNum(unit?.value);
       if (line) line.textContent = fmt(q*u);
 
-      // Check stock warning
+      // stock warning
       if (medicineSel && stockWarning) {
         const selectedOpt = medicineSel.selectedOptions?.[0];
         if (!selectedOpt || !selectedOpt.value) {
@@ -431,28 +465,24 @@ document.addEventListener('DOMContentLoaded', function(){
       recalcTotals();
     }
 
-    // When medicine changes, fill default price only if blank/zero
+    // when medicine changes, set unit price + info
     medicineSel?.addEventListener('change', function(){
-      const opt = medicineSel.options[medicineSel.selectedIndex];
+      const opt = medicineSel.selectedOptions?.[0];
       const price = opt?.getAttribute('data-price');
-      if (unit){
-        const current = toNum(unit.value);
-        unit.value = (toNum(price)).toFixed(2); // Always update unit price when medicine changes
-      }
+      if (unit) unit.value = (toNum(price)).toFixed(2);
       showMedicineInfo(opt);
       recalcLine();
     });
 
-    qty && qty.addEventListener('input', recalcLine);
-    
-    // Initialize medicine info for existing selections
+    // initial info if preselected
     if (medicineSel && medicineSel.selectedOptions[0]) {
       showMedicineInfo(medicineSel.selectedOptions[0]);
     }
-    
+
+    qty && qty.addEventListener('input', recalcLine);
     recalcLine();
 
-    // Remove row
+    // remove row
     btn?.addEventListener('click', function(e){
       e.preventDefault();
       const idField = row.querySelector('input[name$="-id"]');
@@ -466,7 +496,7 @@ document.addEventListener('DOMContentLoaded', function(){
       recalcTotals();
     });
 
-    // Make searchable
+    // searchable
     makeSearchableSelect(medicineSel, { placeholder: 'Search medicines...' });
   }
 
@@ -475,7 +505,7 @@ document.addEventListener('DOMContentLoaded', function(){
     const html = tmpl.replace(/__prefix__/g, idx);
     const frag = document.createElement('tbody');
     frag.innerHTML = html.trim();
-    const row = frag.firstElementChild;
+    const row = frag.firstElementChild;        // <tr>
     tbody.appendChild(row);
     totalForms.value = String(idx+1);
     bindRow(row);
@@ -501,24 +531,20 @@ document.addEventListener('DOMContentLoaded', function(){
     if (subtotalEl) subtotalEl.textContent = fmt(subtotal);
     if (grandEl)    grandEl.textContent    = fmt(grand);
 
-    // Bill due = grand - amount paid (field)
-    const paid = toNum(payAmount?.value);
-
     // Method required if paying > 0
+    const paid = toNum(payAmount?.value);
     if (payMethod && payAmount){
       const paying = paid > 0;
       payMethod.required = paying;
     }
 
-    // "Mark fully paid" helper
+    // Mark fully paid behavior
     if (payFull && payAmount){
       if (payFull.checked){
-        if (!payDirty) payAmount.value = grand.toFixed(2);
+        if (!payDirty) payAmount.value = grand.toFixed(2); // only auto-fill if user hasn't typed
         payAmount.readOnly = true;
-       
       } else {
         payAmount.readOnly = false;
-      
       }
     }
   }
@@ -527,7 +553,7 @@ document.addEventListener('DOMContentLoaded', function(){
   tbody.querySelectorAll('.item-row').forEach(bindRow);
 
   // Patient select
-  makeSearchableSelect(document.querySelector('.patient-select'), { placeholder: 'Search patients...' });
+  makeSearchableSelect(patientSel, { placeholder: 'Search patients...' });
   if (patientSel){
     patientSel.addEventListener('change', async ()=>{ await updatePatientBalance(); });
     updatePatientBalance();
@@ -541,9 +567,12 @@ document.addEventListener('DOMContentLoaded', function(){
   discInput && discInput.addEventListener('input', recalcTotals);
 
   if (payFull){
-    // On edit we keep it unchecked by default to avoid overwriting current paid
+    // don't overwrite user edits once they start typing
     payFull.checked = false;
-    payFull.addEventListener('change', ()=>{ payDirty = false; recalcTotals(); });
+    payFull.addEventListener('change', ()=>{
+      payDirty = false;   // allow auto-fill when toggled on
+      recalcTotals();
+    });
   }
   if (payAmount){
     payAmount.addEventListener('input', ()=>{ payDirty = true; recalcTotals(); });
@@ -554,4 +583,5 @@ document.addEventListener('DOMContentLoaded', function(){
   recalcTotals();
 });
 </script>
+
 {% endblock %}

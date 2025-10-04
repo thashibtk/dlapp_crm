@@ -67,6 +67,13 @@
                   </div>
 
                   <div>
+                    <b>Branch:</b>
+                    {% if a.branch %}
+                      {{ a.branch.name }}
+                    {% else %}&mdash;{% endif %}
+                  </div>
+
+                  <div>
                     <b>Sitting:</b> {{ a.get_sittings_display }}
                   </div>
 

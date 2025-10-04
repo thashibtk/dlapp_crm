@@ -142,6 +142,10 @@ JAZZMIN_SETTINGS = {
         "core.patient": "fas fa-user-injured",
         "core.patientmedicalhistory": "fas fa-notes-medical",
 
+        # Branches
+        "core.branch": "fas fa-building",
+        
+
         # Consultations & Treatment
         "core.hairconsultation": "fas fa-microscope",
         "core.consultationphoto": "fas fa-camera",

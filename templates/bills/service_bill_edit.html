@@ -73,7 +73,7 @@
                               data-balance="{{ p.balance }}"
                               data-search="{{ p.name }} {{ p.phone_number }} {{ p.file_number }}"
                               {% if header_form.initial.patient == p.pk or bill.patient_id == p.pk %}selected{% endif %}>
-                        {{ p.name }}
+                        {{ p }}
                       </option>
                     {% endfor %}
                   </select>
@@ -139,7 +139,6 @@
                       <td>
                         {{ f.unit_price }}
                         {% if f.unit_price.errors %}<div class="invalid-feedback d-block">{{ f.unit_price.errors|join:", " }}</div>{% endif %}
-                        <div class="form-text small">Auto-filled &amp; read-only</div>
                       </td>
                       <td class="text-end fw-semibold"><span class="line-total">₹ 0.00</span></td>
                       <td class="text-center">
@@ -239,7 +238,7 @@
       </div>
     </td>
     <td>{{ formset.empty_form.quantity }}</td>
-    <td>{{ formset.empty_form.unit_price }}<div class="form-text small">Auto-filled &amp; read-only</div></td>
+    <td>{{ formset.empty_form.unit_price }}
     <td class="text-end fw-semibold"><span class="line-total">₹ 0.00</span></td>
     <td class="text-center">
       {% if formset.empty_form.DELETE %}{{ formset.empty_form.DELETE.as_hidden }}{% endif %}
@@ -263,6 +262,7 @@ document.addEventListener('DOMContentLoaded', function(){
 
   const patientSel = document.querySelector('.patient-select');
   const patientBalEl = document.getElementById('patient-balance');
+  const billBalanceSummaryEl = document.getElementById('bill-balance-summary');
 
   let patientBalance = 0;  // +ve = due, -ve = advance
   let payDirty = false;
@@ -344,16 +344,52 @@ document.addEventListener('DOMContentLoaded', function(){
     document.addEventListener('click', function(e){ if (!wrapper.contains(e.target)) hideDropdown(); });
   }
 
+  // Balance labels
   function setPatientLabels() {
     const labelText = patientBalance < 0
-      ? `Advance ${fmt(Math.abs(patientBalance)).replace('₹ ','₹ ')}`
+      ? `Advance ${fmt(Math.abs(patientBalance)).replace('₹ ', '₹ ')}`
       : `Due ${fmt(patientBalance)}`;
     if (patientBalEl) patientBalEl.textContent = labelText;
+    if (billBalanceSummaryEl) billBalanceSummaryEl.innerHTML =
+      `<span class="badge ${patientBalance<0?'bg-success-subtle text-success border border-success':'bg-warning-subtle text-warning border border-warning'}">
+         <i class="fa ${patientBalance<0?'fa-level-up':'fa-level-down'} me-1"></i>${labelText}
+       </span>`;
+
+    if (includeDue) {
+      includeDue.checked = (patientBalance > 0);
+      includeDue.disabled = (patientBalance <= 0);
+      if (includeDueHint) {
+        includeDueHint.textContent = patientBalance > 0
+          ? `Adds previous due (${fmt(patientBalance)}) to this payment.`
+          : `No previous due to add.`;
+      }
+    }
   }
 
   async function updatePatientBalance() {
     const opt = patientSel?.options[patientSel.selectedIndex];
-    if (!opt || !opt.value){ patientBalance = 0; setPatientLabels(); return; }
+    const detailsEl = document.getElementById('patient-details');
+
+    if (!opt || !opt.value){
+      patientBalance = 0;
+      setPatientLabels();
+      if (detailsEl) detailsEl.innerHTML = '';
+      return;
+    }
+
+    // --- Patient details from option data-* ---
+    if (detailsEl) {
+      const details = [];
+      if (opt.dataset.file)    details.push(`File #: ${opt.dataset.file}`);
+      if (opt.dataset.address) details.push(`Address: ${opt.dataset.address}`);
+      if (opt.dataset.city)    details.push(`City: ${opt.dataset.city}`);
+      if (opt.dataset.age)     details.push(`Age: ${opt.dataset.age}`);
+      if (opt.dataset.gender)  details.push(`Gender: ${opt.dataset.gender}`);
+      if (opt.dataset.phone)   details.push(`Phone: ${opt.dataset.phone}`);
+      detailsEl.innerHTML = details.join('<br>');
+    }
+
+    // --- Balance fetch with fallback ---
     try {
       const res = await fetch(`/api/patients/${opt.value}/balance/`);
       const data = await res.json();
@@ -361,8 +397,10 @@ document.addEventListener('DOMContentLoaded', function(){
     } catch(_) {
       patientBalance = parseFloat(opt.dataset.balance || '0') || 0;
     }
+
     setPatientLabels();
   }
+
 
   function bindRow(row){
     row.querySelectorAll('select').forEach(s=>s.classList.add('form-select'));

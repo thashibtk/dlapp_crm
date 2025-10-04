@@ -3,7 +3,7 @@ from django import forms
 from .models import *
 from django.utils import timezone
 from datetime import datetime, time, timedelta
-from .models import Appointment
+from .models import Appointment, Branch
 from django.db.models import Sum, F
 from django.db.models.functions import Coalesce
 from django.forms import BaseInlineFormSet, inlineformset_factory
@@ -78,6 +78,12 @@ class AppointmentBaseForm(forms.ModelForm):
             )
             self.fields['assigned_doctor'].label_from_instance = lambda u: (u.get_full_name() or u.username)
 
+        if 'branch' in self.fields:
+            self.fields['branch'].queryset = Branch.objects.filter(is_active=True).order_by('name')
+            self.fields['branch'].label_from_instance = lambda b: b.name
+            self.fields['branch'].required = True
+            self.fields['branch'].empty_label = 'Select branch'
+
         # min datetime = now (local) — only if the field exists
         if 'appointment_date' in self.fields:
             self.fields['appointment_date'].widget.attrs.setdefault(
@@ -128,13 +134,13 @@ class AppointmentBaseForm(forms.ModelForm):
 class AppointmentCreateForm(AppointmentBaseForm):
     class Meta:
         model = Appointment
-        fields = ['patient', 'sittings', 'appointment_date', 'assigned_doctor', 'notes']
+        fields = ['patient', 'branch', 'sittings', 'appointment_date', 'assigned_doctor', 'notes']
 
 
 class AppointmentEditForm(AppointmentBaseForm):
     class Meta:
         model = Appointment
-        fields = ['patient', 'sittings', 'appointment_date', 'assigned_doctor', 'notes', 'status']
+        fields = ['patient', 'branch', 'sittings', 'appointment_date', 'assigned_doctor', 'notes', 'status']
         widgets = {'status': forms.Select(attrs={'class': 'form-select'})}
 
 

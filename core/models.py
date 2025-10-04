@@ -60,6 +60,28 @@ class EmployeeIdSequence(models.Model):
         db_table = 'employee_id_sequences'
 
 # ===============================
+# BRANCH MANAGEMENT MODELS
+# ===============================
+
+class Branch(models.Model):
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    name = models.CharField(max_length=150, unique=True)
+    phone_number = models.CharField(max_length=17, blank=True)
+    email = models.EmailField(blank=True)
+    address = models.TextField(blank=True)
+    is_active = models.BooleanField(default=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        db_table = 'branches'
+        ordering = ['name']
+
+    def __str__(self):
+        return self.name
+
+
+# ===============================
 # PATIENT MANAGEMENT MODELS
 # ===============================
 class Patient(models.Model):
@@ -281,6 +303,7 @@ class Appointment(models.Model):
     status = models.CharField(max_length=15, choices=STATUS_CHOICES, default='scheduled')
     
     assigned_doctor = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, related_name='doctor_appointments')
+    branch = models.ForeignKey('Branch', on_delete=models.PROTECT, related_name='appointments', null=True, blank=True)
     notes = models.TextField(blank=True)
     reminder_sent = models.BooleanField(default=False)
     

@@ -16,7 +16,7 @@ from decimal import Decimal
 from .decorators import group_required
 from .models import (
     AppointmentLog, MedicineCategory, Patient, PatientMedicalHistory, HairConsultation, Payment, TreatmentPlan,
-    FollowUp, ProgressPhoto, Appointment, Bill,
+    FollowUp, ProgressPhoto, Appointment, Bill, Branch,
     Medicine, MedicineStock, StockTransaction,
     Lead, LeadSource, Expense, BillItem, User
 )
@@ -261,7 +261,7 @@ def dashboard(request):
 
     upcoming = (
         apply_date_range(
-            Appointment.objects.select_related('patient', 'assigned_doctor'),
+            Appointment.objects.select_related('patient', 'assigned_doctor', 'branch'),
             'appointment_date',
             today,
             today,
@@ -742,6 +742,7 @@ STATUS_CHOICES_UI = [
 def appointment_list(request):
     q = (request.GET.get('q') or '').strip()
     doctor_id = (request.GET.get('doctor') or '').strip()
+    branch_id = (request.GET.get('branch') or 'all').strip()
     status = (request.GET.get('status') or '').strip()
     range_param = request.GET.get('range', '').strip()
 
@@ -778,7 +779,7 @@ def appointment_list(request):
     if start and end and end < start:
         start, end = end, start
 
-    qs = Appointment.objects.select_related('patient', 'assigned_doctor')
+    qs = Appointment.objects.select_related('patient', 'assigned_doctor', 'branch')
     qs = apply_date_range(qs, 'appointment_date', start, end)
 
     if q:
@@ -791,6 +792,9 @@ def appointment_list(request):
     if doctor_id and doctor_id != 'all':
         qs = qs.filter(assigned_doctor_id=doctor_id)
 
+    if branch_id and branch_id != 'all':
+        qs = qs.filter(branch_id=branch_id)
+
     if status and status != 'all':
         qs = qs.filter(status=status)
 
@@ -800,9 +804,12 @@ def appointment_list(request):
                .filter(is_active=True, user_type__in=DOCTOR_USER_TYPES)
                .order_by('first_name', 'last_name', 'username'))
 
+    branches = Branch.objects.filter(is_active=True).order_by('name')
+
     ctx = {
         'appointments': qs,
         'doctors': doctors,
+        'branches': branches,
         'status_choices': list(STATUS_CHOICES_UI),
         'status_choicesfilter': [('all', 'All'), ('scheduled', 'Scheduled')] + list(STATUS_CHOICES_UI),
         'selected': {
@@ -810,6 +817,7 @@ def appointment_list(request):
             'to': end,
             'q': q,
             'doctor': doctor_id,
+            'branch': branch_id,
             'status': status or 'all',
             'range': range_param,
         },
@@ -822,6 +830,7 @@ def my_appointment_list(request):
     # --- inputs ---
     q           = (request.GET.get('q') or '').strip()
     status      = (request.GET.get('status') or '').strip()
+    branch_id   = (request.GET.get('branch') or 'all').strip()
     range_param = (request.GET.get('range') or '').strip()
     today = timezone.localdate()
     start_str = request.GET.get('from') or request.GET.get('start') or request.GET.get('date')
@@ -863,7 +872,7 @@ def my_appointment_list(request):
 
     # --- base queryset: ONLY this doctor’s appointments ---
     qs = (Appointment.objects
-          .select_related('patient', 'assigned_doctor')
+          .select_related('patient', 'assigned_doctor', 'branch')
           .filter(assigned_doctor=request.user))
 
     qs = apply_date_range(qs, 'appointment_date', start, end)
@@ -880,16 +889,23 @@ def my_appointment_list(request):
     if status and status != 'all':
         qs = qs.filter(status=status)
 
+    if branch_id and branch_id != 'all':
+        qs = qs.filter(branch_id=branch_id)
+
     qs = qs.order_by('appointment_date')
+
+    branches = Branch.objects.filter(is_active=True).order_by('name')
 
     ctx = {
         'appointments': qs,
+        'branches': branches,
         'status_choices': list(STATUS_CHOICES_UI),
         'status_choicesfilter': [('all','All'), ('scheduled','Scheduled')] + list(STATUS_CHOICES_UI),
         'selected': {
             'from': start,
             'to': end,
             'q': q,
+            'branch': branch_id,
             'status': status or 'all',
             'range': range_param,
         },
@@ -2465,7 +2481,7 @@ def finance_report(request):
 
         ctx['by_area'] = list(by_area_qs)
         ctx['summary'] = {
-            'period': f"{start} to {end}",
+            'period': f"{start.strftime('%d-%b-%Y')} to {end.strftime('%d-%b-%Y')}",
             'area': 'All',
 
             'total_billed': total_billed,
@@ -2481,6 +2497,7 @@ def finance_report(request):
             'leads_open': leads_open,
             'lead_conversion_rate': lead_conversion_rate,  # percent
         }
+
 
     return render(request, 'reports/finance.html', ctx)
 
