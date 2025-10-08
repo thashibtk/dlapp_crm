@@ -531,8 +531,6 @@ document.addEventListener('DOMContentLoaded', function(){
     const medicineInfo = row.querySelector('.medicine-info');
     const stockWarning = row.querySelector('.stock-warning');
 
-    // Unit price read-only
-    if (unit) { unit.readOnly = true; unit.setAttribute('readonly','readonly'); unit.classList.add('bg-light'); }
 
     // Get stock from option
     const getStockFromOption = (opt) => {
@@ -586,6 +584,7 @@ document.addEventListener('DOMContentLoaded', function(){
     });
 
     qty && qty.addEventListener('input', recalcLine);
+    unit && unit.addEventListener('input', recalcLine);
     
     // Initialize medicine info for existing selections
     if (medicineSel && medicineSel.selectedOptions[0]) {

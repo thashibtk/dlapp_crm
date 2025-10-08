@@ -211,6 +211,7 @@
 
           <div class="card-footer d-flex justify-content-end gap-2">
             <a class="btn btn-light" href="{% url 'bill_receipt' bill.pk %}"><i class="fa fa-ban me-1"></i>Cancel</a>
+            <a class="btn btn-danger" href="{% url 'bill_delete' bill.pk %}"><i class="fa fa-trash me-1"></i>Delete</a>
             <button class="btn btn-primary"><i class="fa fa-save me-1"></i>Update Bill</button>
           </div>
         </div>
@@ -413,8 +414,6 @@ document.addEventListener('DOMContentLoaded', function(){
     const line = row.querySelector('.line-total');
     const serviceSel = row.querySelector('select[name$="-service"]');
 
-    // Unit price read-only
-    if (unit) { unit.readOnly = true; unit.setAttribute('readonly','readonly'); unit.classList.add('bg-light'); }
 
     function recalcLine(){
       const q=toNum(qty?.value), u=toNum(unit?.value);
@@ -434,6 +433,7 @@ document.addEventListener('DOMContentLoaded', function(){
     });
 
     qty && qty.addEventListener('input', recalcLine);
+    unit && unit.addEventListener('input', recalcLine);
     recalcLine();
 
     // Remove row
@@ -523,6 +523,7 @@ document.addEventListener('DOMContentLoaded', function(){
   // Recalc hooks
   taxInput && taxInput.addEventListener('input', recalcTotals);
   discInput && discInput.addEventListener('input', recalcTotals);
+
 
   if (payFull){
     // On edit we keep it unchecked by default to avoid overwriting current paid

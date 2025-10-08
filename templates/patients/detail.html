@@ -413,7 +413,7 @@
                                 <span class="d-none d-md-inline">Edit Plan</span>
                               </a>
                             {% else %}
-                              {% if request.user|in_group:"Doctor" or request.user|in_group:"OperationsManager" %}
+                              {% if request.user|in_group:"Doctor" or request.user|in_group:"OperationsManager" or request.user|in_group:"ConsultingDoctor" or request.user|in_group:"Receptionist"  %}
                                 <a class="btn btn-sm btn-outline-primary" href="{% url 'treatment_plan_create' pk=c.pk %}">
                                   <i class="fa fa-plus d-md-none"></i>
                                   <span class="d-none d-md-inline">Create Plan</span>
@@ -456,7 +456,7 @@
                         <th>Response %</th>
                         <th class="d-none d-md-table-cell">Satisfaction</th>
                         <th class="d-none d-lg-table-cell">Next Follow-up</th>
-                        {% if request.user|in_group:"Doctor" or request.user|in_group:"OperationsManager" %}
+                        {% if request.user|in_group:"Doctor" or request.user|in_group:"OperationsManager" or request.user|in_group:"ConsultingDoctor" or request.user|in_group:"Receptionist"  %}
                         <th>Actions</th>
                         {% endif %}
                       </tr>
@@ -489,7 +489,7 @@
                             <span class="text-muted">—</span>
                           {% endif %}
                         </td>
-                        {% if request.user|in_group:"Doctor" or request.user|in_group:"OperationsManager" %}
+                        {% if request.user|in_group:"Doctor" or request.user|in_group:"OperationsManager" or request.user|in_group:"ConsultingDoctor" or request.user|in_group:"Receptionist"  %}
                         <td>
                           <a class="btn btn-sm btn-outline-secondary" href="{% url 'followup_update' pk=f.pk %}">
                             <i class="fa fa-pencil"></i>

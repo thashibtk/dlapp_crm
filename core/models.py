@@ -6,7 +6,8 @@ import uuid
 from django.core.exceptions import ValidationError
 from django.db import models, transaction
 from django.utils import timezone
-from django.db.models import F
+from django.db.models import F, Sum
+
 
 # ===============================
 # USER MANAGEMENT MODELS
@@ -35,6 +36,7 @@ class User(AbstractUser):
     
     class Meta:
         db_table = 'users'
+        verbose_name_plural = 'Users'
 
     def __str__(self):
         return self.get_full_name() or self.username
@@ -51,6 +53,7 @@ class UserProfile(models.Model):
     
     class Meta:
         db_table = 'user_profiles'
+        verbose_name_plural = 'User Profiles'
 
 class EmployeeIdSequence(models.Model):
     year = models.PositiveIntegerField(unique=True)
@@ -58,6 +61,7 @@ class EmployeeIdSequence(models.Model):
 
     class Meta:
         db_table = 'employee_id_sequences'
+        verbose_name_plural = 'Employee ID Sequences'
 
 # ===============================
 # BRANCH MANAGEMENT MODELS
@@ -76,6 +80,7 @@ class Branch(models.Model):
     class Meta:
         db_table = 'branches'
         ordering = ['name']
+        verbose_name_plural = 'Branches'
 
     def __str__(self):
         return self.name
@@ -121,6 +126,7 @@ class Patient(models.Model):
 
     class Meta:
         db_table = 'patients'
+        verbose_name_plural = 'Patients'
 
     def save(self, *args, **kwargs):
         if not self.file_number:
@@ -147,6 +153,7 @@ class Service(models.Model):
     class Meta:
         db_table = "services"
         ordering = ["name"]
+        verbose_name_plural = 'Services'
 
     def __str__(self):
         return self.name
@@ -193,6 +200,7 @@ class PatientMedicalHistory(models.Model):
     
     class Meta:
         db_table = 'patient_medical_history'
+        verbose_name_plural = 'Patient Medical Histories'
 
 # ===============================
 # HAIR CONSULTATION MODELS
@@ -240,6 +248,7 @@ class HairConsultation(models.Model):
     
     class Meta:
         db_table = 'hair_consultations'
+        verbose_name_plural = 'Hair Consultations'
     
     def __str__(self):
         return f"{self.patient.name} - {self.consultation_date.strftime('%Y-%m-%d')}"
@@ -261,6 +270,7 @@ class ConsultationPhoto(models.Model):
     class Meta:
         db_table = 'consultation_photos'
         unique_together = ['consultation', 'photo_type']
+        verbose_name_plural = 'Consultation Photos'
 
 # ===============================
 # TREATMENT MODELS
@@ -293,6 +303,7 @@ class TreatmentPlan(models.Model):
 
     class Meta:
         db_table = 'treatment_plans'
+        verbose_name_plural = 'Treatment Plans'
 
     def save(self, *args, **kwargs):
         self.total_cost = self.cost_per_session * self.total_sessions
@@ -311,6 +322,7 @@ class Appointment(models.Model):
     ]
 
     SITTINGS_CHOICES = [
+        ('consultation', 'Consultation'),
         ('first', 'First Sitting'),
         ('second', 'Second Sitting'),
         ('boost', 'Booster'),
@@ -323,7 +335,7 @@ class Appointment(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     patient = models.ForeignKey(Patient, on_delete=models.CASCADE, related_name='appointments')
     treatment_plan = models.ForeignKey(TreatmentPlan, on_delete=models.SET_NULL, null=True, blank=True)
-    sittings = models.CharField(max_length=20, choices=SITTINGS_CHOICES, default='first')
+    sittings = models.CharField(max_length=20, choices=SITTINGS_CHOICES, default='consultation')
     
     appointment_date = models.DateTimeField()
     status = models.CharField(max_length=15, choices=STATUS_CHOICES, default='scheduled')
@@ -339,11 +351,14 @@ class Appointment(models.Model):
     class Meta:
         db_table = 'appointments'
         ordering = ['appointment_date']
+        verbose_name_plural = 'Appointments'
 
     def __str__(self):
         return f"Appointment for {self.patient.name} on {self.appointment_date.strftime('%Y-%m-%d %H:%M')}"
     
 class AppointmentLog(models.Model):
+    class Meta:
+        verbose_name_plural = 'Appointment Logs'
     ACTIONS = [
         ('create', 'Create'),
         ('reschedule', 'Reschedule'),
@@ -398,6 +413,7 @@ class TreatmentSession(models.Model):
     class Meta:
         db_table = 'treatment_sessions'
         unique_together = ['treatment_plan', 'session_number']
+        verbose_name_plural = 'Treatment Sessions'
 
 # ===============================
 # FOLLOW-UP & PROGRESS MODELS
@@ -429,6 +445,7 @@ class FollowUp(models.Model):
     
     class Meta:
         db_table = 'followups'
+        verbose_name_plural = 'Follow Ups'
 
 class ProgressPhoto(models.Model):
     patient = models.ForeignKey(Patient, on_delete=models.CASCADE)
@@ -439,6 +456,7 @@ class ProgressPhoto(models.Model):
     
     class Meta:
         db_table = 'progress_photos'
+        verbose_name_plural = 'Progress Photos'
 
 # ===============================
 # INVENTORY & PHARMACY MODELS
@@ -495,6 +513,7 @@ class Medicine(models.Model):
     
     class Meta:
         db_table = 'medicines'
+        verbose_name_plural = 'Medicines'
     
     def __str__(self):
         return f"{self.name} ({self.strength})"
@@ -508,6 +527,7 @@ class MedicineStock(models.Model):
     
     class Meta:
         db_table = 'medicine_stocks'
+        verbose_name_plural = 'Medicine Stocks'
     
     @property
     def available_quantity(self):
@@ -550,6 +570,7 @@ class StockTransaction(models.Model):
     class Meta:
         db_table = 'stock_transactions'
         ordering = ['-created_at']
+        verbose_name_plural = 'Stock Transactions'
 
     IN_TYPES = {'purchase', 'return'}
     OUT_TYPES = {'sale', 'expired', 'damaged'}
@@ -596,6 +617,7 @@ class Bill(models.Model):
     class Meta:
         db_table = 'bills'
         ordering = ['-bill_date']
+        verbose_name_plural = 'Bills'
 
     def __str__(self):
         return self.bill_number or (f"Bill for {self.patient.name}" if self.patient_id else "Bill")
@@ -630,6 +652,15 @@ class Bill(models.Model):
                 balance=F('balance') + balance_delta
             )
 
+    def recalculate(self, save=True):
+        total = self.items.aggregate(s=Sum('total_price'))['s'] or Decimal('0.00')
+        self.total_amount = total
+
+        if save:
+            self.save(update_fields=['total_amount', 'updated_at'])
+
+        return total
+
 
 class BillItem(models.Model):
     ITEM_KIND = [('service', 'Service'), ('pharmacy', 'Medicine')]
@@ -647,6 +678,7 @@ class BillItem(models.Model):
 
     class Meta:
         db_table = 'bill_items'
+        verbose_name_plural = 'Bill Items'
 
     def clean(self):
         if self.kind == 'service':
@@ -696,6 +728,8 @@ class BillItem(models.Model):
 
 
 class Payment(models.Model):
+    class Meta:
+        verbose_name_plural = 'Payments'
     PAYMENT_METHOD_CHOICES = [('cash', 'Cash'), ('card', 'Card'), ('upi', 'UPI'), ('cheque', 'Cheque')]
 
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
@@ -750,6 +784,7 @@ class LeadSource(models.Model):
     
     class Meta:
         db_table = 'lead_sources'
+        verbose_name_plural = 'Lead Sources'
     
     def __str__(self):
         return self.name
@@ -796,6 +831,7 @@ class Lead(models.Model):
     class Meta:
         db_table = 'leads'
         ordering = ['-created_at']
+        verbose_name_plural = 'Leads'
     
     def __str__(self):
         return f"{self.name} - {self.phone_number}"
@@ -875,6 +911,7 @@ class Expense(models.Model):
     class Meta:
         db_table = 'expenses'
         ordering = ['-expense_date']
+        verbose_name_plural = 'Expenses'
     
     def save(self, *args, **kwargs):
         if not self.expense_number:
@@ -918,4 +955,5 @@ class DailyReport(models.Model):
     class Meta:
         db_table = 'daily_reports'
         ordering = ['-report_date']
+        verbose_name_plural = 'Daily Reports'
 

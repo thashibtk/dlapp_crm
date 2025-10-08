@@ -96,7 +96,6 @@ class AppointmentBaseForm(forms.ModelForm):
                 local_dt = timezone.localtime(self.instance.appointment_date)
                 local_dt = local_dt.replace(second=0, microsecond=0)
                 self.initial['appointment_date'] = local_dt
-                print(f"DEBUG FORM: Setting initial value to local time: {local_dt}")
 
         # bootstrap classes
         for f in self.fields.values():

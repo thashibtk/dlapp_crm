@@ -62,8 +62,11 @@ urlpatterns = [
     path('bills/<uuid:pk>/edit/service/', v.service_bill_edit, name='service_bill_edit'),
     path('bills/<uuid:pk>/edit/pharmacy/', v.pharmacy_bill_edit, name='pharmacy_sale_edit'),    
     path('bills/<uuid:pk>/receipt/', v.bill_receipt, name='bill_receipt'),
-     path("api/patients/<uuid:patient_id>/bills/", v.patient_previous_bills, name="patient_previous_bills"),
+    path("api/patients/<uuid:patient_id>/bills/", v.patient_previous_bills, name="patient_previous_bills"),
 
+    path('bills/<uuid:pk>/delete/', v.bill_delete, name='bill_delete'),
+    path('bills/service/<uuid:pk>/delete/', v.service_bill_delete, name='service_bill_delete'),
+    path('bills/pharmacy/<uuid:pk>/delete/', v.pharmacy_bill_delete, name='pharmacy_bill_delete'),
 
 
 

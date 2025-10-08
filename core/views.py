@@ -12,6 +12,9 @@ from django.db import transaction
 from django.db.models import Sum, F
 from django.http import HttpResponseBadRequest, JsonResponse
 from decimal import Decimal
+from contextlib import contextmanager
+from django.db.models.signals import post_save, post_delete
+from core.signals import billitem_deleted, apply_stock_on_save, revert_stock_on_delete
 
 from .decorators import group_required
 from .models import (
@@ -1405,7 +1408,6 @@ def service_bill_create(request):
         'is_edit': False,
     })
 
-
 @group_required('Receptionist','OperationsManager','Doctor','PharmacyManager')
 @transaction.atomic
 def service_bill_edit(request, pk):
@@ -1479,6 +1481,38 @@ def service_bill_edit(request, pk):
         'is_edit': True,
     })
 
+@group_required('OperationsManager','Doctor')
+@transaction.atomic
+def service_bill_delete(request, pk):
+    bill = get_object_or_404(Bill, pk=pk, bill_type='service')
+    
+    if request.method == 'POST':
+        # Store bill info for message
+        bill_number = bill.bill_number
+        patient = bill.patient
+        
+        # Delete all payments first (Payment.delete() will adjust patient balance)
+        for payment in bill.payments.all():
+            payment.delete()
+        
+        # Adjust patient balance for bill total
+        bill_total = bill.total_amount or Decimal('0.00')
+        if bill_total != 0:
+            type(patient).objects.filter(pk=patient.pk).update(
+                balance=F('balance') - bill_total
+            )
+        
+        # Delete the bill (cascade will delete items)
+        bill.delete()
+        
+        messages.success(request, f"Service bill #{bill_number} has been deleted successfully.")
+        return redirect('service_bill_list')
+    
+    # GET request - show confirmation page
+    return render(request, 'bills/bill_delete_confirm.html', {
+        'bill': bill,
+        'bill_type': 'Service',
+    })
 
 @group_required('PharmacyManager','OperationsManager','Receptionist','Doctor')
 @transaction.atomic
@@ -1503,7 +1537,20 @@ def pharmacy_bill_create(request):
                     it = f.save(commit=False)
                     it.bill = bill
                     it.kind = 'pharmacy'
-                    it.save()  # This updates bill.total_amount but not patient balance
+                    it.save()
+
+                    if it.medicine:
+                        StockTransaction.objects.create(
+                            medicine=it.medicine,
+                            transaction_type='sale',
+                            quantity=it.quantity,
+                            unit_price=it.unit_price,
+                            patient=bill.patient,
+                            reference_number=bill.bill_number,
+                            notes=f'Pharmacy Bill #{bill.bill_number}',
+                            created_by=request.user
+                        )
+                    
                     saved_any = True
 
                 if not saved_any:
@@ -1557,8 +1604,7 @@ def pharmacy_bill_create(request):
         'formset': PharmacyBillItemFormSet(),
     })
 
-
-@group_required('PharmacyManager','OperationsManager','Receptionist','Doctor')
+@group_required('PharmacyManager', 'OperationsManager', 'Receptionist', 'Doctor')
 @transaction.atomic
 def pharmacy_bill_edit(request, pk):
     bill = get_object_or_404(Bill, pk=pk, bill_type='pharmacy')
@@ -1572,19 +1618,42 @@ def pharmacy_bill_edit(request, pk):
             old_total = bill.total_amount or D0
             old_paid_total = bill.payments.aggregate(s=Sum('amount'))['s'] or D0
 
-            # Save header (no balance update)
+            # --- STEP 1: Restore old stock automatically by deleting old transactions ---
+            StockTransaction.objects.filter(reference_number=bill.bill_number).delete()
+
+            # --- STEP 2: Save bill header ---
             bill = header_form.save(commit=False)
             if not bill.created_by:
                 bill.created_by = request.user
             bill.save()
 
-            # Save items → updates bill.total_amount
-            formset.save()
+            # --- STEP 3: Save items & create new StockTransactions ---
+            items = formset.save(commit=False)
+            for item in items:
+                item.bill = bill
+                item.kind = 'pharmacy'
+                item.save()
 
-            # Finalize totals
+                if item.medicine:
+                    StockTransaction.objects.create(
+                        medicine=item.medicine,
+                        transaction_type='sale',
+                        quantity=item.quantity,
+                        unit_price=item.unit_price,
+                        patient=bill.patient,
+                        reference_number=bill.bill_number,
+                        notes=f'Bill #{bill.bill_number} (edited)',
+                        created_by=request.user,
+                    )
+
+            # Delete removed items
+            for obj in formset.deleted_objects:
+                obj.delete()
+
+            # --- STEP 4: Finalize totals ---
             finalize_bill_totals(bill)
 
-            # Adjust balance for bill total delta
+            # --- STEP 5: Update patient balance based on bill total delta ---
             new_total = bill.total_amount or D0
             total_delta = new_total - old_total
             if total_delta != 0:
@@ -1592,29 +1661,27 @@ def pharmacy_bill_edit(request, pk):
                     balance=F('balance') + total_delta
                 )
 
-            # --- Payment delta handling ---
+            # --- STEP 6: Handle payments ---
             new_paid_total = header_form.cleaned_data.get('paid_amount') or D0
-            new_method     = header_form.cleaned_data.get('payment_method')
+            new_method = header_form.cleaned_data.get('payment_method')
 
-            # 1) Remove old payments *one by one* so Payment.delete() runs
+            # Delete old payments (auto adjust balances if signals used)
             for p in bill.payments.all():
                 p.delete()
 
-            # 2) Persist the bill's paid_amount field
+            # Update bill.paid_amount
             bill.paid_amount = new_paid_total
             bill.save(update_fields=['paid_amount'])
 
-            # 3) Recreate a single payment that matches the form total & method
-            #    (Payment.save() will correctly adjust patient balance)
+            # Recreate payment record if applicable
             if new_paid_total > D0 and new_method:
                 Payment.objects.create(
                     patient=bill.patient,
                     bill=bill,
                     amount=new_paid_total,
-                    method=new_method,            # <-- this is now always written
+                    method=new_method,
                     received_by=request.user,
                 )
-            # --- end payments ---
 
             messages.success(request, f"Pharmacy bill #{bill.bill_number} updated successfully.")
             return redirect('bill_receipt', pk=bill.pk)
@@ -1631,6 +1698,82 @@ def pharmacy_bill_edit(request, pk):
         'is_edit': True,
     })
 
+@contextmanager
+def disconnect_signals(signals_receivers):
+    try:
+        for signal, receiver, sender in signals_receivers:
+            signal.disconnect(receiver, sender=sender)
+        yield
+    finally:
+        for signal, receiver, sender in signals_receivers:
+            signal.connect(receiver, sender=sender)
+
+@group_required('PharmacyManager','OperationsManager','Doctor')
+@transaction.atomic
+def pharmacy_bill_delete(request, pk):
+    bill = get_object_or_404(Bill, pk=pk, bill_type='pharmacy')
+
+    if request.method == 'POST':
+        bill_number = bill.bill_number
+        patient = bill.patient
+
+        # Signals to temporarily disconnect
+        signals_to_disconnect = [
+            (post_delete, billitem_deleted, BillItem),
+            (post_save, apply_stock_on_save, StockTransaction),
+            (post_delete, revert_stock_on_delete, StockTransaction),
+        ]
+
+        # Temporarily disconnect signals while deleting
+        with disconnect_signals(signals_to_disconnect):
+            # Restore stock manually
+            for item in bill.items.all():
+                if item.medicine:
+                    MedicineStock.objects.filter(medicine=item.medicine).update(
+                        current_quantity=F('current_quantity') + item.quantity,
+                        updated_by=request.user
+                    )
+                    StockTransaction.objects.create(
+                        medicine=item.medicine,
+                        transaction_type='return',
+                        quantity=item.quantity,
+                        unit_price=item.unit_price,
+                        patient=bill.patient,
+                        reference_number=bill.bill_number,
+                        notes=f'Bill #{bill.bill_number} deleted - stock restored',
+                        created_by=request.user
+                    )
+
+            # Delete payments (Payment.delete adjusts patient balance)
+            for payment in bill.payments.all():
+                payment.delete()
+
+            # Adjust patient balance for bill total
+            bill_total = bill.total_amount or Decimal('0.00')
+            if bill_total != 0:
+                type(patient).objects.filter(pk=patient.pk).update(
+                    balance=F('balance') - bill_total
+                )
+
+            # Delete the bill
+            bill.delete()
+
+        messages.success(request, f"Pharmacy bill #{bill_number} deleted successfully. Stock restored.")
+        return redirect('pharmacy_bill_list')
+
+    return render(request, 'bills/bill_delete_confirm.html', {
+        'bill': bill,
+        'bill_type': 'Pharmacy',
+    })
+
+@group_required('Receptionist','OperationsManager','Doctor','PharmacyManager')
+def bill_delete(request, pk):
+    bill = get_object_or_404(Bill, pk=pk)
+    
+    if bill.bill_type == 'pharmacy':
+        return pharmacy_bill_delete(request, pk)
+    else:
+        return service_bill_delete(request, pk)
 
 @group_required('Receptionist','OperationsManager','Doctor','PharmacyManager')
 def bill_receipt(request, pk):

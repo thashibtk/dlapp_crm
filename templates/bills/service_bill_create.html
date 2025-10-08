@@ -554,16 +554,13 @@ document.addEventListener('DOMContentLoaded', function(){
   };
 
   // --- lock unit price ---
-  if (unit) {
-    unit.readOnly = true;
-    unit.setAttribute('readonly', 'readonly');
-    unit.classList.add('bg-light');
-    unit.setAttribute('inputmode','decimal');
-  }
+
 
   // --- events ---
   serviceSel?.addEventListener('change', () => applyDefaultPrice(true));
   qty?.addEventListener('input', recalcLine);
+  unit?.addEventListener('input', recalcLine);
+
 
   // Initial prefill: only if unit is empty/zero (don’t clobber existing prices on edit)
   applyDefaultPrice(false);
