@@ -240,9 +240,9 @@
                   <th class="text-nowrap"><i class="fa fa-book me-1"></i>Bill</th>
                   <th class="text-nowrap"><i class="fa fa-calendar me-1"></i>Date</th>
                   <th><i class="fa fa-user me-1"></i>Patient</th>
-                  <th class="text-end" style="width: 4rem;">Total</th>
-                  <th class="text-end" style="width: 4rem;">Paid</th>
-                  <th class="text-end" style="width: 4rem;">Balance</th>
+                  <th class="text-end" style="width: 6rem;">Total</th>
+                  <th class="text-end" style="width: 6rem;">Paid</th>
+                  <th class="text-end" style="width: 6rem;">Balance</th>
                   <th class="text-nowrap"><i class="fa fa-credit-card me-1"></i>Method</th>
                   <th class="text-nowrap"><i class="fa fa-info-circle me-1"></i>Status</th>
                   <th class="text-center"><i class="fa fa-cog me-1"></i>Action</th>
@@ -315,16 +315,25 @@
                 {% endfor %}
               </tbody>
               <tfoot class="fw-bold">
-                  <tr>
-                    <td colspan="4" class="text-end">Total:</td>
-                    <td class="text-end" id="total-amount-footer">₹ 0.00</td>
-                    <td class="text-end" id="paid-amount-footer">₹ 0.00</td>
-                    <td class="text-end" id="balance-amount-footer">₹ 0.00</td>
-                    <td></td>
-                    <td></td>
-                    <td></td>
-                  </tr>
+                <tr>
+                  <td colspan="4" class="text-end">Total:</td>
+                  <td class="text-end">₹ {{ totals.total_amount|floatformat:2 }}</td>
+                  <td class="text-end">₹ {{ totals.paid_amount|floatformat:2 }}</td>
+                  <td class="text-end">
+                    {% if totals.balance > 0 %}
+                      ₹ {{ totals.balance|floatformat:2 }} <span class="badge bg-danger">Due</span>
+                    {% elif totals.balance < 0 %}
+                      ₹ {{ totals.balance|floatformat:2 }} <span class="badge bg-success">Advance</span>
+                    {% else %}
+                      ₹ 0.00
+                    {% endif %}
+                  </td>
+                  <td></td>
+                  <td></td>
+                  <td></td>
+                </tr>
               </tfoot>
+
             </table>
           </div>
         </div>
@@ -373,8 +382,15 @@
     <p style="font-size:11px;color:#555;">
       Balance: <span id="printBalance"></span> |
       Method: <span id="printMethod"></span> |
-      Date Range: <span id="printDateRange"></span>
+      Date Range: <span id="printDateRange"></span> |
     </p>
+    <p style="font-size:11px;color:#555;">
+      Total Amount: <strong>₹ {{ totals.total_amount|floatformat:2 }}</strong> |
+      Paid: <strong>₹ {{ totals.paid_amount|floatformat:2 }}</strong> |
+      Net: <strong>₹ {{ totals.balance|floatformat:2 }}</strong>
+    </p>
+
+
   </div>
 
   <table class="print-table">
@@ -436,156 +452,137 @@
 
 
 <script>
-// Keep only this initialization for bills-table + filters
-document.addEventListener('DOMContentLoaded', function () {
-  console.log('DEBUG: Initializing bills table and filters');
+  document.addEventListener('DOMContentLoaded', function () {
+    console.log('DEBUG: Initializing bills table and filters');
 
-  const form = document.getElementById('filterForm');
-  if (form) {
-    const fromI = form.querySelector('input[name="from"]');
-    const toI   = form.querySelector('input[name="to"]');
-    const qBtns = form.querySelectorAll('[data-range]');
+    const form = document.getElementById('filterForm');
+    if (form) {
+      const fromI = form.querySelector('input[name="from"]');
+      const toI   = form.querySelector('input[name="to"]');
+      const qBtns = form.querySelectorAll('[data-range]');
 
-    // --- helpers (local dates) ---
-    const pad = n => String(n).padStart(2, '0');
-    const fmt = d => `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`;
-    const parseISO = s => {
-      if (!s) return null;
-      const [y,m,d] = s.split('-').map(Number);
-      return new Date(y, m-1, d);
-    };
-    const today = (() => { const n=new Date(); return new Date(n.getFullYear(), n.getMonth(), n.getDate()); })();
-    const start7d = new Date(today.getFullYear(), today.getMonth(), today.getDate() - 6);
-    const monthStart = new Date(today.getFullYear(), today.getMonth(), 1);
-    const monthEnd   = new Date(today.getFullYear(), today.getMonth()+1, 0);
+      // --- helpers (local dates) ---
+      const pad = n => String(n).padStart(2, '0');
+      const fmt = d => `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`;
+      const parseISO = s => {
+        if (!s) return null;
+        const [y,m,d] = s.split('-').map(Number);
+        return new Date(y, m-1, d);
+      };
+      const today = (() => { const n=new Date(); return new Date(n.getFullYear(), n.getMonth(), n.getDate()); })();
+      const start7d = new Date(today.getFullYear(), today.getMonth(), today.getDate() - 6);
+      const monthStart = new Date(today.getFullYear(), today.getMonth(), 1);
+      const monthEnd   = new Date(today.getFullYear(), today.getMonth()+1, 0);
 
-    const clearActive = () => qBtns.forEach(b => { b.classList.remove('active'); b.setAttribute('aria-pressed','false'); });
-    const setActive   = (btn) => { clearActive(); if (btn) { btn.classList.add('active'); btn.setAttribute('aria-pressed','true'); } };
+      const clearActive = () => qBtns.forEach(b => { b.classList.remove('active'); b.setAttribute('aria-pressed','false'); });
+      const setActive   = (btn) => { clearActive(); if (btn) { btn.classList.add('active'); btn.setAttribute('aria-pressed','true'); } };
 
-    const syncMinMax = () => {
-      if (!fromI || !toI) return;
-      toI.min   = fromI.value || '';
-      fromI.max = toI.value || '';
-    };
+      const syncMinMax = () => {
+        if (!fromI || !toI) return;
+        toI.min   = fromI.value || '';
+        fromI.max = toI.value || '';
+      };
 
-    // Infer active button from URL (?range=...) or from the inputs (from/to)
-    (function initActiveFromState(){
-      const url = new URL(window.location);
-      const r = url.searchParams.get('range');
-
-      if (r && form.querySelector(`[data-range="${r}"]`)) {
-        setActive(form.querySelector(`[data-range="${r}"]`));
-        return;
-      }
-
-      // fallback: infer from inputs
-      const f = parseISO(fromI?.value);
-      const t = parseISO(toI?.value);
-      if (!f || !t) { clearActive(); return; }
-
-      const fISO = fmt(f), tISO = fmt(t);
-      if (fISO === fmt(today) && tISO === fmt(today)) {
-        setActive(form.querySelector('[data-range="today"]')); return;
-      }
-      if (fISO === fmt(start7d) && tISO === fmt(today)) {
-        setActive(form.querySelector('[data-range="7d"]')); return;
-      }
-      if (fISO === fmt(monthStart) && tISO === fmt(monthEnd)) {
-        setActive(form.querySelector('[data-range="month"]')); return;
-      }
-      clearActive();
-    })();
-
-    syncMinMax();
-
-    // Quick range click: set ?range=..., drop from/to, keep other filters, navigate
-    qBtns.forEach(btn => {
-      btn.addEventListener('click', () => {
+      // Infer active button from URL (?range=...) or from the inputs (from/to)
+      (function initActiveFromState(){
         const url = new URL(window.location);
-        url.searchParams.set('range', btn.getAttribute('data-range'));
-        url.searchParams.delete('from');
-        url.searchParams.delete('to');
-        window.location.href = url.toString();
-      });
-    });
+        const r = url.searchParams.get('range');
 
-    // Manual date edits: clear active state, fix inverted ranges, keep min/max (NO auto-submit)
-    const handleDateChange = () => {
-      if (fromI?.value && toI?.value && toI.value < fromI.value) {
-        toI.value = fromI.value;
-      }
+        if (r && form.querySelector(`[data-range="${r}"]`)) {
+          setActive(form.querySelector(`[data-range="${r}"]`));
+          return;
+        }
+
+        // fallback: infer from inputs
+        const f = parseISO(fromI?.value);
+        const t = parseISO(toI?.value);
+        if (!f || !t) { clearActive(); return; }
+
+        const fISO = fmt(f), tISO = fmt(t);
+        if (fISO === fmt(today) && tISO === fmt(today)) {
+          setActive(form.querySelector('[data-range="today"]')); return;
+        }
+        if (fISO === fmt(start7d) && tISO === fmt(today)) {
+          setActive(form.querySelector('[data-range="7d"]')); return;
+        }
+        if (fISO === fmt(monthStart) && tISO === fmt(monthEnd)) {
+          setActive(form.querySelector('[data-range="month"]')); return;
+        }
+        clearActive();
+      })();
+
       syncMinMax();
-      clearActive();
-    };
-    fromI?.addEventListener('input', handleDateChange);
-    toI?.addEventListener('input', handleDateChange);
 
-    // Ensure GET submission drops any stale query (?range=...) by forcing path-only action
-    form.setAttribute('action', window.location.pathname);
-  }
+      // Quick range click: set ?range=..., drop from/to, keep other filters, navigate
+      qBtns.forEach(btn => {
+        btn.addEventListener('click', () => {
+          const url = new URL(window.location);
+          url.searchParams.set('range', btn.getAttribute('data-range'));
+          url.searchParams.delete('from');
+          url.searchParams.delete('to');
+          window.location.href = url.toString();
+        });
+      });
 
-  // --- DataTables Initialization ---
-  if (window.jQuery && $.fn.DataTable) {
-    const tableElement = $('#bills-table');
+      // Manual date edits: clear active state, fix inverted ranges, keep min/max (NO auto-submit)
+      const handleDateChange = () => {
+        if (fromI?.value && toI?.value && toI.value < fromI.value) {
+          toI.value = fromI.value;
+        }
+        syncMinMax();
+        clearActive();
+      };
+      fromI?.addEventListener('input', handleDateChange);
+      toI?.addEventListener('input', handleDateChange);
 
-    if ($.fn.DataTable.isDataTable(tableElement)) {
-      tableElement.DataTable().destroy();
+      // Ensure GET submission drops any stale query (?range=...) by forcing path-only action
+      form.setAttribute('action', window.location.pathname);
     }
 
-    const table = tableElement.DataTable({
-      pageLength: 25,
-      order: [[2, 'desc']], // Date desc
-      columnDefs: [
-        { orderable: false, targets: [9] } // Action col index
-      ],
-      dom: '<"d-flex flex-wrap align-items-center gap-2"f>t<"d-flex justify-content-between mt-3"ip>'
-    });
+    // --- DataTables Initialization ---
+    if (window.jQuery && $.fn.DataTable) {
+      const tableElement = $('#bills-table');
 
-    function updateFooterTotals() {
-      const toNumber = (t) => Number(String(t || '').replace(/[^0-9.\-]/g, '')) || 0;
-      const sumCol = (idx) =>
-        table.column(idx, { search: 'applied', page: 'current' }).data().toArray()
-             .map(toNumber).reduce((a, b) => a + b, 0);
+      if ($.fn.DataTable.isDataTable(tableElement)) {
+        tableElement.DataTable().destroy();
+      }
 
-      const total = sumCol(4); // Total
-      const paid  = sumCol(5); // Paid
-      const net   = total - paid; // positive = due, negative = advance
-
-      $('#total-amount-footer').text('₹ ' + total.toFixed(2));
-      $('#paid-amount-footer') .text('₹ ' + paid.toFixed(2));
-      $('#balance-amount-footer').text('₹ ' + net.toFixed(2));
+      const table = tableElement.DataTable({
+        pageLength: 25,
+        order: [[2, 'desc']], // Date desc
+        columnDefs: [
+          { orderable: false, targets: [9] } // Action col index
+        ],
+        dom: '<"d-flex flex-wrap align-items-center gap-2"f>t<"d-flex justify-content-between mt-3"ip>'
+      });
     }
-
-    table.on('draw', updateFooterTotals);
-    updateFooterTotals();
-  }
-});
+  });
 </script>
 
 
 <script>
-function printBills() {
-  const balanceSel = document.querySelector('select[name="balance_status"]');
-  const methodSel  = document.querySelector('select[name="method"]');
-  const fromI = document.querySelector('input[name="from"]');
-  const toI   = document.querySelector('input[name="to"]');
+  function printBills() {
+    const balanceSel = document.querySelector('select[name="balance_status"]');
+    const methodSel  = document.querySelector('select[name="method"]');
+    const fromI = document.querySelector('input[name="from"]');
+    const toI   = document.querySelector('input[name="to"]');
 
-  // Balance & Method display
-  document.getElementById('printBalance').textContent =
-    balanceSel && balanceSel.value ? balanceSel.options[balanceSel.selectedIndex].text : 'All';
-  document.getElementById('printMethod').textContent =
-    methodSel && methodSel.value ? methodSel.options[methodSel.selectedIndex].text : 'All';
+    // Balance & Method display
+    document.getElementById('printBalance').textContent =
+      balanceSel && balanceSel.value ? balanceSel.options[balanceSel.selectedIndex].text : 'All';
+    document.getElementById('printMethod').textContent =
+      methodSel && methodSel.value ? methodSel.options[methodSel.selectedIndex].text : 'All';
 
-  // Date range display
-  const from = fromI && fromI.value ? fromI.value : '';
-  const to   = toI && toI.value ? toI.value : '';
-  let dr = 'All Dates';
-  if (from && to) dr = `From ${from} to ${to}`;
-  else if (from)  dr = `From ${from}`;
-  else if (to)    dr = `To ${to}`;
-  document.getElementById('printDateRange').textContent = dr;
+    // Date range display
+    const from = fromI && fromI.value ? fromI.value : '';
+    const to   = toI && toI.value ? toI.value : '';
+    let dr = 'All Dates';
+    if (from && to) dr = `From ${from} to ${to}`;
+    else if (from)  dr = `From ${from}`;
+    else if (to)    dr = `To ${to}`;
+    document.getElementById('printDateRange').textContent = dr;
 
-  window.print();
-}
+    window.print();
+  }
 </script>
 

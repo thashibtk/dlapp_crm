@@ -1250,6 +1250,13 @@ def _bill_queryset_with_filters(request, bill_type):
         )
     ).order_by('-bill_date')
 
+    # --- ✅ Add totals here ---
+    totals = qs.aggregate(
+        total_amount=Sum('total_amount') or 0,
+        paid_amount=Sum('paid_amount') or 0,
+    )
+    totals['balance'] = (totals['total_amount'] or 0) - (totals['paid_amount'] or 0)
+
     selected = {
         'from': start,
         'to': end,
@@ -1258,18 +1265,19 @@ def _bill_queryset_with_filters(request, bill_type):
         'balance_status': balance_status or '',
         'range': range_param,
     }
-    return qs, selected
+    return qs, selected, totals
 
 
 @group_required('Receptionist', 'CRO', 'OperationsManager', 'Doctor', 'PharmacyManager', 'Staff')
 def service_bill_list(request):
-    qs, selected = _bill_queryset_with_filters(request, bill_type='service')
+    qs, selected, totals = _bill_queryset_with_filters(request, bill_type='service')
     ctx = {
         'title': 'Service Bills',
         'bills': qs,
         'status_choices': [('all', 'All')] + BILL_STATUS_CHOICES_UI,
         'method_choices': [('all', 'All')] + PAYMENT_METHOD_CHOICES,
         'selected': selected,
+        'totals': totals,
         'page_kind': 'service',
         'create_url_name': 'service_bill_create',
     }
@@ -1277,13 +1285,14 @@ def service_bill_list(request):
 
 @group_required('Receptionist', 'CRO', 'OperationsManager', 'Doctor', 'PharmacyManager', 'Staff')
 def pharmacy_bill_list(request):
-    qs, selected = _bill_queryset_with_filters(request, bill_type='pharmacy')
+    qs, selected, totals = _bill_queryset_with_filters(request, bill_type='pharmacy')
     ctx = {
         'title': 'Pharmacy Bills',
         'bills': qs,
         'status_choices': [('all', 'All')] + BILL_STATUS_CHOICES_UI,
         'method_choices': [('all', 'All')] + PAYMENT_METHOD_CHOICES,
         'selected': selected,
+        'totals': totals,
         'page_kind': 'pharmacy',
         'create_url_name': 'pharmacy_sale_create',
     }
