@@ -2215,7 +2215,7 @@ def lead_convert(request, pk):
     return render(request, 'leads/convert.html', {'form': form, 'lead': lead})
 
 # ---------------- Expenses ----------------
-@group_required('OperationsManager','Doctor','ConsultingDoctor')
+@group_required('OperationsManager','Doctor')
 def expense_list(request):
     status = (request.GET.get('status') or '').strip()
     range_param = (request.GET.get('range') or '').strip()
@@ -2297,13 +2297,8 @@ def expense_list(request):
     }
     return render(request, 'expenses/list.html', ctx)
 
-
 @login_required
 def my_expense_list(request):
-    """
-    List only the expenses created/requested by the current user.
-    Same UX as expense_list: quick ranges, manual dates, status, 'All Pending', total.
-    """
     status      = (request.GET.get('status') or '').strip()
     range_param = (request.GET.get('range') or '').strip()
     pending_all = request.GET.get('pending_all') == '1'
@@ -2400,7 +2395,6 @@ def expense_create(request):
         form = ExpenseForm(user=request.user)
     return render(request, 'expenses/form.html', {'form': form, 'is_edit': False, 'can_edit_status': user_can_edit_status(request.user)})
 
-
 def expense_update(request, pk):
     expense = get_object_or_404(Expense, pk=pk)
     if request.method == 'POST':
@@ -2416,12 +2410,6 @@ def expense_update(request, pk):
         'expenses/form.html',
         {'form': form, 'is_edit': True, 'expense': expense, 'can_edit_status': user_can_edit_status(request.user)}
     )
-
-
-
-
-#Create
-
 
 
 def expense_detail(request, pk):

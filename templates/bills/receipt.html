@@ -487,10 +487,8 @@
     const patientName = "{{ bill.patient.name|escapejs }}";
     const patientNumber = "{{ bill.patient.phone_number|default:''|escapejs }}";
     const billNumber = "{{ bill.bill_number|escapejs }}";
-    const totalAmount = "{{ bill.total_amount|floatformat:2|escapejs }}";
-    const billURL = window.location.href;
+    const billURL = "{{ request.scheme }}://{{ request.get_host }}{% url 'public_bill_view' bill.id %}";
 
-    // Construct the message (Logic is fine here)
     const message = encodeURIComponent(
       `*DLapp Hair Regenerative Clinic*\n\n` +
       `Hello ${patientName}, your bill receipt is ready.\n` +
@@ -500,34 +498,16 @@
       `Thank you for choosing DLapp!`
     );
 
-    // Normalize phone number for WhatsApp
-    function normalizePhoneNumber(number) { // Renamed for clarity
-        // 1. Remove non-digit characters
+    function normalizePhoneNumber(number) {
         let digits = number.replace(/\D/g, '');
-
-        // 2. If number starts with '0', remove it
-        if (digits.startsWith('0')) {
-            digits = digits.slice(1);
-        }
-        
-        // 3. Check for 10-digit length (Subscriber Number)
-        if (digits.length === 10) {
-            return '91' + digits;
-        } 
-        
-        // 4. Check for existing 12-digit international format (91 + 10 digits)
-        if (digits.length === 12 && digits.startsWith('91')) {
-            return digits;
-        } 
-        
-        // 5. All other cases fail
+        if (digits.startsWith('0')) digits = digits.slice(1);
+        if (digits.length === 10) return '91' + digits;
+        if (digits.length === 12 && digits.startsWith('91')) return digits;
         return null;
     }
-    
-    // 🔥 FIX: CALL THE FUNCTION AND STORE ITS RESULT
+
     const normalized = normalizePhoneNumber(patientNumber);
-    
-    // 🔥 FIX: CHECK THE RESULT (which will be a string or null)
+
     if (normalized) {
       btn.href = `https://wa.me/${normalized}?text=${message}`;
       btn.target = "_blank";
@@ -537,6 +517,7 @@
     }
   })();
 </script>
+
 
 
 

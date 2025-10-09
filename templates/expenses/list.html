@@ -227,6 +227,7 @@
               <thead>
                 <tr>
                   <th><i class="fa fa-calendar me-1"></i>Date</th>
+                  <th><i class="fa fa-user me-1"></i>Created By</th>
                   <th><i class="fa fa-tag me-1"></i>Category</th>
                   <th><i class="fa fa-file me-1"></i>Description</th>
                   <th class="text-end"><i class="fa fa-inr me-1"></i>Amount</th>
@@ -238,6 +239,7 @@
                 {% for e in expenses %}
                 <tr>
                   <td class="text-nowrap">{{ e.expense_date|date:"d-M-Y" }}</td>
+                  <td>{{ e.requested_by.get_full_name|default:e.requested_by.username }}</td>
                   <td>{{ e.category.name }}</td>
                   <td class="text-truncate" style="max-width:420px;">
                     <a class="text-decoration-none" href="{% url 'expense_detail' e.pk %}">
@@ -264,24 +266,26 @@
                       <a class="btn btn-sm btn-outline-secondary" href="{% url 'expense_detail' e.pk %}">
                         <i class="fa fa-eye me-1"></i>View
                       </a>
-                      
+
+                      {% if request.user == e.requested_by %}
                       <a class="btn btn-sm btn-primary" href="{% url 'expense_update' e.pk %}">
                         <i class="fa fa-pencil me-1"></i>Edit
                       </a>
+                      {% endif %}
 
                       {% if request.user|in_group:"OperationsManager" and e.status == 'pending' %}
                         <form method="post" action="{% url 'expense_approve' e.pk %}" class="d-inline expense-approve-form">
                           {% csrf_token %}
-                          <button class="btn btn-sm btn-success">
+                          <a class="btn btn-sm btn-outline-success btn-approve">
                             <i class="fa fa-check me-1"></i>Approve
-                          </button>
+                          </a>
                         </form>
 
                         <form method="post" action="{% url 'expense_reject' e.pk %}" class="d-inline expense-reject-form">
                           {% csrf_token %}
-                          <button class="btn btn-sm btn-danger">
+                          <a class="btn btn-sm btn-outline-danger btn-reject">
                             <i class="fa fa-times me-1"></i>Reject
-                          </button>
+                          </a>
                         </form>
                       {% endif %}
 
@@ -289,14 +293,12 @@
                         {% if request.user|in_group:"OperationsManager" or request.user|in_group:"Doctor" %}
                         <form method="post" action="{% url 'expense_mark_paid' e.pk %}" class="d-inline expense-paid-form">
                           {% csrf_token %}
-                          <button class="btn btn-sm btn-success">
+                          <a class="btn btn-sm btn-outline-success btn-paid">
                             <i class="fa fa-inr me-1"></i>Mark Paid
-                          </button>
+                          </a>
                         </form>
                         {% endif %}
-                      {% endif %}
-
-                      
+                      {% endif %}                      
                     </div>
                   </td>
        
@@ -309,7 +311,7 @@
               </tbody>
               <tfoot>
                 <tr>
-                  <th colspan="3" class="text-end">Total:</th>
+                  <th colspan="4" class="text-end">Total:</th>
                   <th class="text-end">₹ {{ total_amount }}</th>
                   <th colspan="2"></th>
                 </tr>
@@ -373,8 +375,9 @@
     <thead>
       <tr>
         <th style="width:16%;">Date</th>
-        <th style="width:20%;">Category</th>
-        <th style="width:36%;">Description</th>
+        <th style="width:15%;">Created By</th>
+        <th style="width:15%;">Category</th>
+        <th style="width:26%;">Description</th>
         <th style="width:14%;">Amount</th>
         <th style="width:14%;">Status</th>
       </tr>
@@ -383,6 +386,7 @@
       {% for e in expenses %}
       <tr>
         <td>{{ e.expense_date|date:"d-M-Y" }}</td>
+        <td>{{ e.requested_by.get_full_name|default:e.requested_by.username }}</td>
         <td>{{ e.category.name }}</td>
         <td>{{ e.description|default:"—" }}</td>
         <td>₹ {{ e.amount|floatformat:2 }}</td>
@@ -415,18 +419,17 @@
 <script>
 document.addEventListener('DOMContentLoaded', function () {
 
-  // Reusable SweetAlert confirmation with DLapp theme
+  // DLapp-styled SweetAlert confirmation
   function confirmAction(form, title, text, confirmButtonText, icon = 'question', confirmColor = '#16a34a') {
-    event.preventDefault();
     Swal.fire({
       title: title,
       text: text,
       icon: icon,
       showCancelButton: true,
-      background: '#f9fafb',             // light background
-      color: '#111827',                  // dark text
-      confirmButtonColor: confirmColor,  // DLapp green
-      cancelButtonColor: '#d33',         // red cancel
+      background: '#f9fafb',
+      color: '#111827',
+      confirmButtonColor: confirmColor,
+      cancelButtonColor: '#d33',
       confirmButtonText: confirmButtonText,
       cancelButtonText: 'Cancel',
       customClass: {
@@ -436,29 +439,30 @@ document.addEventListener('DOMContentLoaded', function () {
         cancelButton: 'px-4 py-2 rounded-lg font-medium'
       }
     }).then((result) => {
-      if (result.isConfirmed) {
-        form.submit();
-      }
+      if (result.isConfirmed) form.submit();
     });
   }
 
-  // Approve
-  document.querySelectorAll('.expense-approve-form').forEach(form => {
-    form.addEventListener('submit', function (event) {
+  // Approve button
+  document.querySelectorAll('.btn-approve').forEach(btn => {
+    btn.addEventListener('click', function () {
+      const form = btn.closest('form');
       confirmAction(form, 'Approve Expense', 'Are you sure you want to approve this expense?', 'Yes, Approve!', 'success');
     });
   });
 
-  // Reject
-  document.querySelectorAll('.expense-reject-form').forEach(form => {
-    form.addEventListener('submit', function (event) {
+  // Reject button
+  document.querySelectorAll('.btn-reject').forEach(btn => {
+    btn.addEventListener('click', function () {
+      const form = btn.closest('form');
       confirmAction(form, 'Reject Expense', 'Do you really want to reject this expense?', 'Yes, Reject!', 'warning', '#ef4444');
     });
   });
 
   // Mark Paid
-  document.querySelectorAll('.expense-paid-form').forEach(form => {
-    form.addEventListener('submit', function (event) {
+  document.querySelectorAll('.btn-paid').forEach(btn => {
+    btn.addEventListener('click', function () {
+      const form = btn.closest('form');
       confirmAction(form, 'Mark as Paid', 'Confirm marking this expense as PAID?', 'Yes, Mark Paid!', 'info', '#16a34a');
     });
   });

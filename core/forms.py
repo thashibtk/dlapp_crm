@@ -29,10 +29,11 @@ class PatientForm(forms.ModelForm):
         }
 
     def clean_date_of_birth(self):
-        dob = self.cleaned_data['date_of_birth']
-        if dob > timezone.localdate():
+        dob = self.cleaned_data.get('date_of_birth')
+        if dob and dob > timezone.localdate():
             raise forms.ValidationError("Date of birth cannot be in the future.")
         return dob
+
     
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -76,7 +77,8 @@ class AppointmentBaseForm(forms.ModelForm):
                 User.objects.filter(is_active=True, user_type__in=['doctor', 'consulting_doctor'])
                     .order_by('first_name','last_name','username')
             )
-            self.fields['assigned_doctor'].label_from_instance = lambda u: (u.get_full_name() or u.username)
+            self.fields['assigned_doctor'].label_from_instance = lambda u: f"Dr {u.get_full_name() or u.username}"
+
 
         if 'branch' in self.fields:
             self.fields['branch'].queryset = Branch.objects.filter(is_active=True).order_by('name')

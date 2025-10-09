@@ -133,10 +133,18 @@
               <a class="btn btn-outline-secondary" href="{% url 'expense_list' %}">
                 <i class="fa fa-arrow-left me-2"></i>Back
               </a>
+              {% if request.user == expense.requested_by %}
               <a class="btn btn-primary" href="{% url 'expense_update' expense.pk %}">
                 <i class="fa fa-pencil me-2"></i>Edit
               </a>
-              <button class="btn btn-success" type="button" onclick="printExpense()">
+              {% endif %}
+              {% if request.user|in_group:"OperationsManager"  %}
+              <a class="btn btn-primary" href="{% url 'expense_update' expense.pk %}">
+                <i class="fa fa-pencil me-2"></i>Edit
+              </a>
+              {% endif %}
+              
+              <button class="btn btn-outline-success" type="button" onclick="printExpense()">
                 <i class="fa fa-print me-2"></i>Print
               </button>
             </div>

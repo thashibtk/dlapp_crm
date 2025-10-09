@@ -100,7 +100,7 @@ class Patient(models.Model):
     file_number = models.CharField(max_length=20, unique=True, blank=True)
     name = models.CharField(max_length=200)
     age = models.PositiveIntegerField()
-    date_of_birth = models.DateField()
+    date_of_birth = models.DateField(blank=True, null=True)
     gender = models.CharField(max_length=10, choices=GENDER_CHOICES)
     phone_number = models.CharField(max_length=17)
     email = models.EmailField(blank=True)
