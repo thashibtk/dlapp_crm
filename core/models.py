@@ -104,7 +104,7 @@ class Patient(models.Model):
     gender = models.CharField(max_length=10, choices=GENDER_CHOICES)
     phone_number = models.CharField(max_length=17)
     email = models.EmailField(blank=True)
-    address = models.TextField()
+    address = models.TextField(blank=True)
     city = models.CharField(max_length=100)
     district = models.CharField(max_length=100)
     pincode = models.CharField(max_length=10, blank=True)

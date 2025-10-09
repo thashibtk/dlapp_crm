@@ -67,7 +67,8 @@ urlpatterns = [
     path('bills/<uuid:pk>/delete/', v.bill_delete, name='bill_delete'),
     path('bills/service/<uuid:pk>/delete/', v.service_bill_delete, name='service_bill_delete'),
     path('bills/pharmacy/<uuid:pk>/delete/', v.pharmacy_bill_delete, name='pharmacy_bill_delete'),
-
+    
+   path('bill/view/<uuid:uuid>/', v.public_bill_view, name='public_bill_view'),
 
 
     # pharmacy

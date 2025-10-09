@@ -259,8 +259,47 @@
                     {% endif %}
                   </td>
                   <td class="d-print-none">
-                    <!-- your action buttons/forms -->
+                    <div class="d-flex flex-wrap gap-1">
+                      
+                      <a class="btn btn-sm btn-outline-secondary" href="{% url 'expense_detail' e.pk %}">
+                        <i class="fa fa-eye me-1"></i>View
+                      </a>
+                      
+                      <a class="btn btn-sm btn-primary" href="{% url 'expense_update' e.pk %}">
+                        <i class="fa fa-pencil me-1"></i>Edit
+                      </a>
+
+                      {% if request.user|in_group:"OperationsManager" and e.status == 'pending' %}
+                        <form method="post" action="{% url 'expense_approve' e.pk %}" class="d-inline expense-approve-form">
+                          {% csrf_token %}
+                          <button class="btn btn-sm btn-success">
+                            <i class="fa fa-check me-1"></i>Approve
+                          </button>
+                        </form>
+
+                        <form method="post" action="{% url 'expense_reject' e.pk %}" class="d-inline expense-reject-form">
+                          {% csrf_token %}
+                          <button class="btn btn-sm btn-danger">
+                            <i class="fa fa-times me-1"></i>Reject
+                          </button>
+                        </form>
+                      {% endif %}
+
+                      {% if e.status == 'approved' %}
+                        {% if request.user|in_group:"OperationsManager" or request.user|in_group:"Doctor" %}
+                        <form method="post" action="{% url 'expense_mark_paid' e.pk %}" class="d-inline expense-paid-form">
+                          {% csrf_token %}
+                          <button class="btn btn-sm btn-success">
+                            <i class="fa fa-inr me-1"></i>Mark Paid
+                          </button>
+                        </form>
+                        {% endif %}
+                      {% endif %}
+
+                      
+                    </div>
                   </td>
+       
                 </tr>
                 {% empty %}
                 <tr>
@@ -369,6 +408,65 @@
   </div>
 </div>
 
+
+<!-- SweetAlert2 -->
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+
+  // Reusable SweetAlert confirmation with DLapp theme
+  function confirmAction(form, title, text, confirmButtonText, icon = 'question', confirmColor = '#16a34a') {
+    event.preventDefault();
+    Swal.fire({
+      title: title,
+      text: text,
+      icon: icon,
+      showCancelButton: true,
+      background: '#f9fafb',             // light background
+      color: '#111827',                  // dark text
+      confirmButtonColor: confirmColor,  // DLapp green
+      cancelButtonColor: '#d33',         // red cancel
+      confirmButtonText: confirmButtonText,
+      cancelButtonText: 'Cancel',
+      customClass: {
+        popup: 'rounded-3xl shadow-lg',
+        title: 'text-lg font-semibold',
+        confirmButton: 'px-4 py-2 rounded-lg font-medium',
+        cancelButton: 'px-4 py-2 rounded-lg font-medium'
+      }
+    }).then((result) => {
+      if (result.isConfirmed) {
+        form.submit();
+      }
+    });
+  }
+
+  // Approve
+  document.querySelectorAll('.expense-approve-form').forEach(form => {
+    form.addEventListener('submit', function (event) {
+      confirmAction(form, 'Approve Expense', 'Are you sure you want to approve this expense?', 'Yes, Approve!', 'success');
+    });
+  });
+
+  // Reject
+  document.querySelectorAll('.expense-reject-form').forEach(form => {
+    form.addEventListener('submit', function (event) {
+      confirmAction(form, 'Reject Expense', 'Do you really want to reject this expense?', 'Yes, Reject!', 'warning', '#ef4444');
+    });
+  });
+
+  // Mark Paid
+  document.querySelectorAll('.expense-paid-form').forEach(form => {
+    form.addEventListener('submit', function (event) {
+      confirmAction(form, 'Mark as Paid', 'Confirm marking this expense as PAID?', 'Yes, Mark Paid!', 'info', '#16a34a');
+    });
+  });
+
+});
+</script>
+
+
 <script>
 function printExpenses() {
   const form = document.getElementById('filterForm');
@@ -393,7 +491,7 @@ function printExpenses() {
 }
 </script>
 
-<script>
+<script>  
 document.addEventListener('DOMContentLoaded', function(){
   const form = document.getElementById('filterForm');
   if (!form) return;

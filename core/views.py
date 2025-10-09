@@ -2671,3 +2671,28 @@ def _sync_user_role_group(user):
         g, _ = Group.objects.get_or_create(name=gname)
         user.groups.add(g)
 
+
+def public_bill_view(request, uuid):
+    bill = get_object_or_404(Bill, id=uuid)
+    items = bill.items.all()
+    subtotal = sum(item.total_price for item in items)
+
+    # Compute paid amount
+    payments = bill.payments.order_by('date')
+    paid = sum(p.amount for p in payments)
+    balance_for_this_bill = max(0, bill.total_amount - paid)
+
+    # Get last payment method
+    last_payment = payments.last()
+    method_display = last_payment.get_method_display() if last_payment else ''
+
+    return render(request, 'bills/public_receipt.html', {
+        'bill': bill,
+        'items': items,
+        'subtotal': subtotal,
+        'paid': paid,
+        'balance_for_this_bill': balance_for_this_bill,
+        'method_display': method_display,  # <-- add this
+    })
+
+
